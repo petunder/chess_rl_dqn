@@ -42,8 +42,8 @@ This project combines the game of chess with deep reinforcement learning. It use
 
 1. Clone this repository:
    ```
-   git clone https://github.com/yourusername/chess-reinforcement-learning.git
-   cd chess-reinforcement-learning
+   git clone https://github.com/petunder/chess_rl_dqn
+   cd chess_rl_dqn
    ```
 
 2. Install the required packages:
