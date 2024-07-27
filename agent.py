@@ -1,3 +1,4 @@
+#agent.py
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -33,13 +34,13 @@ class DQNAgent:
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
-    def act(self, state):
+    def act(self, state, board):
         if np.random.rand() <= self.epsilon:
-            return random.randrange(self.action_size)
+            return random.choice(list(board.legal_moves))
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         with torch.no_grad():
-            q_values = self.model(state)
-        return q_values.argmax().item()
+            q_values = self.model(state).squeeze().cpu().numpy()
+        return choose_legal_move(board, q_values)[0]
 
     def replay(self):
         if len(self.memory) < self.batch_size:

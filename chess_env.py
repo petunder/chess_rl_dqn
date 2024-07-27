@@ -1,3 +1,4 @@
+#chess_env.py
 import gym
 import numpy as np
 import chess
@@ -43,11 +44,22 @@ class ChessEnv(gym.Env):
 
     def _get_reward(self):
         if self.board.is_checkmate():
-            return 1.0 if self.board.turn == chess.BLACK else -1.0
+            return 100 if self.board.turn == chess.BLACK else -100
         elif self.board.is_stalemate() or self.board.is_insufficient_material():
-            return 0.0
+            return 0
         else:
-            return -0.001  # Небольшой штраф за каждый ход, чтобы стимулировать быструю игру
+            # Оценка позиции
+            piece_values = {
+                chess.PAWN: 1,
+                chess.KNIGHT: 3,
+                chess.BISHOP: 3,
+                chess.ROOK: 5,
+                chess.QUEEN: 9,
+                chess.KING: 0
+            }
+            white_score = sum(piece_values[p.piece_type] for p in self.board.pieces(color=chess.WHITE))
+            black_score = sum(piece_values[p.piece_type] for p in self.board.pieces(color=chess.BLACK))
+            return (white_score - black_score) / 100  # Нормализация
 
     def render(self):
         print(self.board)
