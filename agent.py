@@ -38,7 +38,8 @@ class DQNAgent:
         self.gamma = 0.99
         self.epsilon = 1.0
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
+        self.epsilon_decay = 0.9995  # Замедлим уменьшение эпсилон
+        self.losses = []
         self.target_update = 10
 
     def act(self, state):
@@ -76,7 +77,11 @@ class DQNAgent:
         loss.backward()
         self.optimizer.step()
 
+        self.losses.append(loss.item())
         self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
+
+    def get_average_weights(self):
+        return {name: param.mean().item() for name, param in self.model.named_parameters()}
 
     def update_target_model(self):
         self.target_model.load_state_dict(self.model.state_dict())

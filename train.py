@@ -59,17 +59,16 @@ for episode in range(num_episodes):
 
         if move in env.board.legal_moves:
             next_state, reward, done, _ = env.step(action)
-            reward += 0.1  # Дополнительная награда за корректный ход
         else:
             legal_moves = list(env.board.legal_moves)
             if legal_moves:
                 move = np.random.choice(legal_moves)
                 action = move.from_square * 64 + move.to_square
                 next_state, reward, done, _ = env.step(action)
-                reward -= 0.1  # Штраф за выбор некорректного хода
+                reward -= 0.5  # Штраф за выбор некорректного хода
             else:
                 done = True
-                reward = -1  # Большой штраф за отсутствие легальных ходов
+                reward = -10  # Большой штраф за отсутствие легальных ходов
 
         next_state = state_to_tensor(next_state)
 
@@ -94,6 +93,12 @@ for episode in range(num_episodes):
         visualize_training(episode, white_rewards_history, black_rewards_history)
         print(f"Episode: {episode}, White Reward: {white_reward}, Black Reward: {black_reward}")
         print(f"White Epsilon: {white_agent.epsilon}, Black Epsilon: {black_agent.epsilon}")
+        print(f"White Average Weights: {white_agent.get_average_weights()}")
+        print(f"Black Average Weights: {black_agent.get_average_weights()}")
+        print(f"White Average Loss: {np.mean(white_agent.losses[-100:])}")
+        print(f"Black Average Loss: {np.mean(black_agent.losses[-100:])}")
+        white_agent.losses = []
+        black_agent.losses = []
 
     if episode % 1000 == 0:
         white_agent.save(f"white_chess_dqn_model_episode_{episode}.pth")

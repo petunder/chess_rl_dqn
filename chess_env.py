@@ -43,11 +43,11 @@ class ChessEnv(gym.Env):
 
     def _get_reward(self):
         if self.board.is_checkmate():
-            return 1 if self.board.turn == chess.BLACK else -1
+            return 10 if self.board.turn == chess.BLACK else -10
         elif self.board.is_stalemate() or self.board.is_insufficient_material():
             return 0
         else:
-            return 0  # No reward for intermediate moves
+            return 0.01  # Небольшая положительная награда за продолжение игры
 
     def render(self):
         print(self.board)
