@@ -75,7 +75,6 @@ class DQNAgent:
 
         self.losses.append(loss.item())
         self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
-
     def update_target_model(self):
         self.target_model.load_state_dict(self.model.state_dict())
 

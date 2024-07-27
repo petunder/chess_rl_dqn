@@ -17,6 +17,6 @@ class DQN(nn.Module):
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
-        x = x.view(-1, 256 * 8 * 8)
+        x = x.contiguous().view(x.size(0), -1)  # Делаем тензор непрерывным и изменяем его форму
         x = F.relu(self.fc1(x))
         return self.fc2(x)
