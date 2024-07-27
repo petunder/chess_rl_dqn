@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from IPython.display import clear_output
 import chess
+import torch
 
 import matplotlib
 matplotlib.use('Agg')  # Используйте не-интерактивный бэкенд
@@ -26,6 +27,9 @@ def visualize_training(episode, white_rewards, black_rewards):
     plt.legend()
     plt.savefig(f'training_progress_episode_{episode}.png')
     plt.close()
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
 env = ChessEnv()
 state_size = 64 * 13  # 64 клетки, 13 возможных состояний для каждой клетки

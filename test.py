@@ -3,6 +3,7 @@ from agent import DQNAgent
 import numpy as np
 import time
 import chess
+import torch
 
 def state_to_tensor(state):
     return np.reshape(state, (1, -1))[0]
@@ -11,6 +12,9 @@ def action_to_move(action):
     from_square = action // 64
     to_square = action % 64
     return chess.Move(from_square, to_square)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
 env = ChessEnv()
 state_size = 64 * 13
