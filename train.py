@@ -10,7 +10,7 @@ import matplotlib
 matplotlib.use('Agg')  # Используйте не-интерактивный бэкенд
 
 def state_to_tensor(state):
-    return state  # Теперь состояние уже в нужном формате
+    return state / 12.0  # Нормализация входных данных
 
 def action_to_move(action):
     from_square = action // 64
@@ -65,10 +65,10 @@ for episode in range(num_episodes):
                 move = np.random.choice(legal_moves)
                 action = move.from_square * 64 + move.to_square
                 next_state, reward, done, _ = env.step(action)
-                reward -= 0.5  # Штраф за выбор некорректного хода
+                reward -= 0.05  # Уменьшенный штраф за выбор некорректного хода
             else:
                 done = True
-                reward = -10  # Большой штраф за отсутствие легальных ходов
+                reward = -1.0  # Уменьшенный штраф за отсутствие легальных ходов
 
         next_state = state_to_tensor(next_state)
 

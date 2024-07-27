@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+
 
 class DQN(nn.Module):
     def __init__(self, input_size, output_size):
@@ -8,7 +10,12 @@ class DQN(nn.Module):
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, output_size)
 
+        # Правильная инициализация весов
+        nn.init.kaiming_normal_(self.fc1.weight)
+        nn.init.kaiming_normal_(self.fc2.weight)
+        nn.init.kaiming_normal_(self.fc3.weight)
+
     def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
         return self.fc3(x)
