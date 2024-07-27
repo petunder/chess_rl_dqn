@@ -1,9 +1,8 @@
 import torch
 import torch.nn as nn
 
-class DQNAgent:
-    def __init__(self, state_size, action_size, name):
-        self.name = name
+class DQN(nn.Module):
+    def __init__(self, input_size, output_size):
         super(DQN, self).__init__()
         self.fc1 = nn.Linear(input_size, 256)
         self.fc2 = nn.Linear(256, 256)

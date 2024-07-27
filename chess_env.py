@@ -30,12 +30,16 @@ class ChessEnv(gym.Env):
         return self._get_observation(), reward, done, {}
 
     def _get_observation(self):
-        obs = np.zeros((8, 8), dtype=np.uint8)
+        obs = np.zeros((64, 13), dtype=np.float32)
         for i in range(64):
             piece = self.board.piece_at(i)
             if piece:
-                obs[i // 8][i % 8] = piece.piece_type + (6 if piece.color else 0)
-        return obs
+                piece_type = piece.piece_type
+                color = int(piece.color)
+                obs[i, piece_type + color * 6] = 1
+            else:
+                obs[i, 12] = 1  # Empty square
+        return obs.flatten()
 
     def _get_reward(self):
         if self.board.is_checkmate():
