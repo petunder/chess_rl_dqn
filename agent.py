@@ -35,7 +35,7 @@ class DQNAgent:
     def act(self, state, board):
         if np.random.rand() <= self.epsilon:
             return random.choice(list(board.legal_moves))
-        state = torch.FloatTensor(state).unsqueeze(0).permute(0, 3, 1, 2).to(self.device)
+        state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         with torch.no_grad():
             q_values = self.model(state).squeeze().cpu().numpy()
         return self.choose_legal_move(board, q_values)

@@ -13,6 +13,7 @@ class DQN(nn.Module):
         self.fc2 = nn.Linear(1024, 64 * 64)
 
     def forward(self, x):
+        x = x.permute(0, 3, 1, 2)  # Изменяем порядок размерностей
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
