@@ -59,8 +59,8 @@ print(f"Using device: {device}")
 env = ChessEnv()
 state_size = 8 * 8 * 13  # 8x8 доска, 13 возможных состояний для каждой клетки
 action_size = 64 * 64  # все возможные ходы (из-в)
-white_agent = DQNAgent(state_size, action_size, "White")
-black_agent = DQNAgent(state_size, action_size, "Black")
+white_agent = DQNAgent("White")
+black_agent = DQNAgent("Black")
 
 num_episodes = 10000
 max_steps = 100

@@ -8,15 +8,13 @@ from collections import deque
 from dqn import DQN
 
 class DQNAgent:
-    def __init__(self, state_size, action_size, name):
+    def __init__(self, name):
         self.name = name
-        self.state_size = state_size
-        self.action_size = action_size
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
 
-        self.model = DQN(state_size, action_size).to(self.device)
-        self.target_model = DQN(state_size, action_size).to(self.device)
+        self.model = DQN().to(self.device)
+        self.target_model = DQN().to(self.device)
         self.target_model.load_state_dict(self.model.state_dict())
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=0.0001, weight_decay=1e-5)
