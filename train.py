@@ -7,8 +7,16 @@ from IPython.display import clear_output
 import chess
 import torch
 import random
-
 import matplotlib
+import os
+from datetime import datetime
+
+def save_game(moves, episode, folder):
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    filename = os.path.join(folder, f"game_{episode:07d}.txt")
+    with open(filename, "w") as f:
+        f.write(" ".join(moves))
 
 matplotlib.use('Agg')  # Используйте не-интерактивный бэкенд
 
@@ -69,6 +77,8 @@ black_rewards_history = []
 white_legal_moves_history = []
 black_legal_moves_history = []
 
+folder_name = datetime.now().strftime("training/%d_%m_%Y_%H_%M")
+
 for episode in range(num_episodes):
     state = env.reset()
     done = False
@@ -77,12 +87,14 @@ for episode in range(num_episodes):
     black_reward = 0
     white_legal_moves = 0
     black_legal_moves = 0
+    moves = []
 
     while not done and step < max_steps:
         current_player = env.get_current_player()
         agent = white_agent if current_player == chess.WHITE else black_agent
 
         action = agent.act(state, env.board)
+        moves.append(action.uci())
         next_state, reward, done, _ = env.step(action.from_square * 64 + action.to_square)
 
         agent.remember(state, action.from_square * 64 + action.to_square, reward, next_state, done)
@@ -98,6 +110,7 @@ for episode in range(num_episodes):
         state = next_state
         step += 1
 
+    save_game(moves, episode, folder_name)
     white_agent.update_target_model()
     black_agent.update_target_model()
 

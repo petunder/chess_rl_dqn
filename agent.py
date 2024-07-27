@@ -33,12 +33,16 @@ class DQNAgent:
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state, board):
-        if np.random.rand() <= self.epsilon:
-            return random.choice(list(board.legal_moves))
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
-        with torch.no_grad():
-            q_values = self.model(state).squeeze().cpu().numpy()
-        return self.choose_legal_move(board, q_values)
+        while True:
+            with torch.no_grad():
+                q_values = self.model(state).squeeze().cpu().numpy()
+            move = self.choose_legal_move(board, q_values)
+            if move in board.legal_moves:
+                return move
+            else:
+                # Наказание за недопустимый ход
+                q_values[move.from_square * 64 + move.to_square] = -float('inf')
 
     def choose_legal_move(self, board, q_values):
         legal_moves = list(board.legal_moves)
