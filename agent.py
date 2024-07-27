@@ -18,7 +18,8 @@ class DQNAgent:
         self.target_model = DQN(state_size, action_size).to(self.device)
         self.target_model.load_state_dict(self.model.state_dict())
 
-        self.optimizer = optim.Adam(self.model.parameters(), lr=0.0001)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=0.0001, weight_decay=1e-5)
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=1000, gamma=0.1)
         self.memory = deque(maxlen=10000)
 
         self.batch_size = 64
@@ -62,8 +63,9 @@ class DQNAgent:
 
         self.optimizer.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)  # Gradient clipping
+        torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
         self.optimizer.step()
+        self.scheduler.step()
 
         self.losses.append(loss.item())
         self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)

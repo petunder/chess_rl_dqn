@@ -30,16 +30,16 @@ class ChessEnv(gym.Env):
         return self._get_observation(), reward, done, {}
 
     def _get_observation(self):
-        obs = np.zeros((64, 13), dtype=np.float32)
+        obs = np.zeros((8, 8, 13), dtype=np.float32)
         for i in range(64):
             piece = self.board.piece_at(i)
             if piece:
-                piece_type = piece.piece_type
                 color = int(piece.color)
-                obs[i, piece_type + color * 6] = 1
+                piece_type = piece.piece_type - 1
+                obs[i // 8, i % 8, piece_type + color * 6] = 1
             else:
-                obs[i, 12] = 1  # Empty square
-        return obs.flatten()
+                obs[i // 8, i % 8, 12] = 1
+        return obs
 
     def _get_reward(self):
         if self.board.is_checkmate():
@@ -47,7 +47,7 @@ class ChessEnv(gym.Env):
         elif self.board.is_stalemate() or self.board.is_insufficient_material():
             return 0.0
         else:
-            return 0.001  # Небольшая положительная награда за продолжение игры
+            return -0.001  # Небольшой штраф за каждый ход, чтобы стимулировать быструю игру
 
     def render(self):
         print(self.board)
