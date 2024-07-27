@@ -45,7 +45,8 @@ class DQNAgent:
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
-        q_values = self.model(state)
+        with torch.no_grad():
+            q_values = self.model(state)
         return q_values.argmax().item()
 
     def remember(self, state, action, reward, next_state, done):
@@ -58,14 +59,15 @@ class DQNAgent:
         batch = self.memory.sample(self.batch_size)
         states, actions, rewards, next_states, dones = zip(*batch)
 
-        states = torch.FloatTensor(states).to(self.device)
+        states = torch.FloatTensor(np.array(states)).to(self.device)
         actions = torch.LongTensor(actions).to(self.device)
         rewards = torch.FloatTensor(rewards).to(self.device)
-        next_states = torch.FloatTensor(next_states).to(self.device)
+        next_states = torch.FloatTensor(np.array(next_states)).to(self.device)
         dones = torch.FloatTensor(dones).to(self.device)
 
         current_q_values = self.model(states).gather(1, actions.unsqueeze(1))
-        next_q_values = self.target_model(next_states).max(1)[0].detach()
+        with torch.no_grad():
+            next_q_values = self.target_model(next_states).max(1)[0]
         target_q_values = rewards + (1 - dones) * self.gamma * next_q_values
 
         loss = nn.MSELoss()(current_q_values, target_q_values.unsqueeze(1))
