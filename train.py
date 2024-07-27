@@ -73,6 +73,7 @@ for episode in range(num_episodes):
     state = env.reset()
     done = False
     step = 0
+    total_reward = 0
 
     while not done and step < max_steps:
         current_player = env.get_current_player()
@@ -85,7 +86,12 @@ for episode in range(num_episodes):
         agent.replay()
 
         state = next_state
+        total_reward += reward
         step += 1
+
+    if episode % 100 == 0:
+        print(f"Episode: {episode}, Total Reward: {total_reward}, Steps: {step}")
+
 
     white_agent.update_target_model()
     black_agent.update_target_model()

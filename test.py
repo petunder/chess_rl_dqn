@@ -6,22 +6,34 @@ import time
 import chess
 import torch
 
-def state_to_tensor(state):
-    return np.reshape(state, (1, -1))[0]
 
-def action_to_move(action):
-    from_square = action // 64
-    to_square = action % 64
-    return chess.Move(from_square, to_square)
+def visualize_board(board):
+    unicode_pieces = {
+        'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟',
+        'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙'
+    }
+
+    print("  a b c d e f g h")
+    print(" +-----------------+")
+    for i in range(8):
+        print(f"{8 - i}|", end="")
+        for j in range(8):
+            piece = board.piece_at(chess.square(j, 7 - i))
+            if piece:
+                print(f"{unicode_pieces[piece.symbol()]} ", end="")
+            else:
+                print(". ", end="")
+        print(f"|{8 - i}")
+    print(" +-----------------+")
+    print("  a b c d e f g h")
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 env = ChessEnv()
-state_size = 64 * 13
-action_size = 64 * 64
-white_agent = DQNAgent(state_size, action_size, "White")
-black_agent = DQNAgent(state_size, action_size, "Black")
+white_agent = DQNAgent("White")
+black_agent = DQNAgent("Black")
 
 # Load the trained models
 try:
@@ -33,7 +45,7 @@ except FileNotFoundError:
 
 # Test the trained agents
 state = env.reset()
-env.render()
+visualize_board(env.board)
 done = False
 step = 0
 max_steps = 100
@@ -43,30 +55,15 @@ while not done and step < max_steps:
     agent = white_agent if current_player == chess.WHITE else black_agent
     player_name = "White" if current_player == chess.WHITE else "Black"
 
-    state_tensor = state_to_tensor(state)
-    action = agent.act(state_tensor)
-    move = action_to_move(action)
+    action = agent.act(state, env.board)
 
     print(f"\nStep {step + 1}:")
-    print(f"{player_name} agent chose action: {action}")
-    print(f"Corresponding move: {move}")
+    print(f"{player_name} agent chose move: {action}")
 
-    if move in env.board.legal_moves:
-        state, reward, done, _ = env.step(action)
-        print(f"Move is legal. Reward: {reward}")
-    else:
-        print(f"Illegal move! Trying to find a legal move...")
-        legal_moves = list(env.board.legal_moves)
-        if legal_moves:
-            move = np.random.choice(legal_moves)
-            action = move.from_square * 64 + move.to_square
-            state, reward, done, _ = env.step(action)
-            print(f"Chose random legal move: {move}. Reward: {reward}")
-        else:
-            print(f"No legal moves available. Game over.")
-            done = True
+    state, reward, done, _ = env.step(action.from_square * 64 + action.to_square)
+    print(f"Reward: {reward}")
 
-    env.render()
+    visualize_board(env.board)
     time.sleep(1)
     step += 1
 

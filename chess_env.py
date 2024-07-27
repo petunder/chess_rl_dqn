@@ -16,17 +16,14 @@ class ChessEnv(gym.Env):
         return self._get_observation()
 
     def step(self, action):
-        from_square = action // 64
-        to_square = action % 64
-        move = chess.Move(from_square, to_square)
-
+        move = chess.Move(action // 64, action % 64)
         if move in self.board.legal_moves:
             self.board.push(move)
             done = self.board.is_game_over()
             reward = self._get_reward()
         else:
             done = True
-            reward = -1  # Penalty for illegal move
+            reward = -10  # Больший штраф за нелегальный ход
 
         return self._get_observation(), reward, done, {}
 
@@ -57,8 +54,10 @@ class ChessEnv(gym.Env):
                 chess.QUEEN: 9,
                 chess.KING: 0
             }
-            white_score = sum(piece_values[p.piece_type] for p in self.board.pieces(color=chess.WHITE))
-            black_score = sum(piece_values[p.piece_type] for p in self.board.pieces(color=chess.BLACK))
+            white_score = sum(len(self.board.pieces(piece_type, chess.WHITE)) * value
+                              for piece_type, value in piece_values.items())
+            black_score = sum(len(self.board.pieces(piece_type, chess.BLACK)) * value
+                              for piece_type, value in piece_values.items())
             return (white_score - black_score) / 100  # Нормализация
 
     def render(self):

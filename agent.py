@@ -35,10 +35,17 @@ class DQNAgent:
     def act(self, state, board):
         if np.random.rand() <= self.epsilon:
             return random.choice(list(board.legal_moves))
-        state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        state = torch.FloatTensor(state).unsqueeze(0).permute(0, 3, 1, 2).to(self.device)
         with torch.no_grad():
             q_values = self.model(state).squeeze().cpu().numpy()
-        return choose_legal_move(board, q_values)[0]
+        return self.choose_legal_move(board, q_values)
+
+    def choose_legal_move(self, board, q_values):
+        legal_moves = list(board.legal_moves)
+        legal_move_indices = [move.from_square * 64 + move.to_square for move in legal_moves]
+        legal_q_values = q_values[legal_move_indices]
+        best_move_index = np.argmax(legal_q_values)
+        return legal_moves[best_move_index]
 
     def replay(self):
         if len(self.memory) < self.batch_size:
