@@ -3,14 +3,20 @@ from agent import DQNAgent
 import numpy as np
 import matplotlib.pyplot as plt
 from IPython.display import clear_output
+import chess
 
+import matplotlib
+matplotlib.use('Agg')  # Используйте не-интерактивный бэкенд
 
 def state_to_tensor(state):
-    return np.reshape(state, (1, -1))[0]
+    return state  # Теперь состояние уже в нужном формате
 
+def action_to_move(action):
+    from_square = action // 64
+    to_square = action % 64
+    return chess.Move(from_square, to_square)
 
 def visualize_training(episode, white_rewards, black_rewards):
-    clear_output(wait=True)
     plt.figure(figsize=(12, 6))
     plt.plot(white_rewards, label='White')
     plt.plot(black_rewards, label='Black')
@@ -18,12 +24,12 @@ def visualize_training(episode, white_rewards, black_rewards):
     plt.xlabel('Episode')
     plt.ylabel('Total Reward')
     plt.legend()
-    plt.show()
-
+    plt.savefig(f'training_progress_episode_{episode}.png')
+    plt.close()
 
 env = ChessEnv()
-state_size = 64 * 13
-action_size = 64 * 64
+state_size = 64 * 13  # 64 клетки, 13 возможных состояний для каждой клетки
+action_size = 64 * 64  # все возможные ходы (из-в)
 white_agent = DQNAgent(state_size, action_size, "White")
 black_agent = DQNAgent(state_size, action_size, "Black")
 
@@ -42,16 +48,31 @@ for episode in range(num_episodes):
 
     while not done and step < max_steps:
         current_player = env.get_current_player()
-        agent = white_agent if current_player == 0 else black_agent
+        agent = white_agent if current_player == chess.WHITE else black_agent
 
         action = agent.act(state)
-        next_state, reward, done, _ = env.step(action)
+        move = action_to_move(action)
+
+        if move in env.board.legal_moves:
+            next_state, reward, done, _ = env.step(action)
+            reward += 0.1  # Дополнительная награда за корректный ход
+        else:
+            legal_moves = list(env.board.legal_moves)
+            if legal_moves:
+                move = np.random.choice(legal_moves)
+                action = move.from_square * 64 + move.to_square
+                next_state, reward, done, _ = env.step(action)
+                reward -= 0.1  # Штраф за выбор некорректного хода
+            else:
+                done = True
+                reward = -1  # Большой штраф за отсутствие легальных ходов
+
         next_state = state_to_tensor(next_state)
 
         agent.remember(state, action, reward, next_state, done)
         agent.replay()
 
-        if current_player == 0:
+        if current_player == chess.WHITE:
             white_reward += reward
         else:
             black_reward += reward
