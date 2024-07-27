@@ -73,7 +73,10 @@ for episode in range(num_episodes):
     state = env.reset()
     done = False
     step = 0
-    total_reward = 0
+    white_reward = 0
+    black_reward = 0
+    white_legal_moves = 0
+    black_legal_moves = 0
 
     while not done and step < max_steps:
         current_player = env.get_current_player()
@@ -85,13 +88,15 @@ for episode in range(num_episodes):
         agent.remember(state, action.from_square * 64 + action.to_square, reward, next_state, done)
         agent.replay()
 
+        if current_player == chess.WHITE:
+            white_reward += reward
+            white_legal_moves += 1
+        else:
+            black_reward += reward
+            black_legal_moves += 1
+
         state = next_state
-        total_reward += reward
         step += 1
-
-    if episode % 100 == 0:
-        print(f"Episode: {episode}, Total Reward: {total_reward}, Steps: {step}")
-
 
     white_agent.update_target_model()
     black_agent.update_target_model()
@@ -102,8 +107,7 @@ for episode in range(num_episodes):
     black_legal_moves_history.append(black_legal_moves)
 
     if episode % 100 == 0:
-        visualize_training(episode, white_rewards_history, black_rewards_history, white_legal_moves_history,
-                           black_legal_moves_history)
+        visualize_training(episode, white_rewards_history, black_rewards_history, white_legal_moves_history, black_legal_moves_history)
         print(f"Episode: {episode}, White Reward: {white_reward}, Black Reward: {black_reward}")
         print(f"White Legal Moves: {white_legal_moves}, Black Legal Moves: {black_legal_moves}")
         print(f"White Epsilon: {white_agent.epsilon}, Black Epsilon: {black_agent.epsilon}")
