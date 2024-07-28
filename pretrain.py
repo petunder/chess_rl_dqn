@@ -12,6 +12,9 @@ import io
 
 import chess
 
+import random
+import chess
+
 class ChessDataset(Dataset):
     def __init__(self, games):
         self.games = games
@@ -26,23 +29,29 @@ class ChessDataset(Dataset):
         result = game['Result']
 
         self.env.reset()
-        states = []
-        actions = []
+        valid_states = []
+        valid_actions = []
 
         for move in moves:
-            state = self.env._get_observation()
             try:
                 chess_move = self.env.board.parse_san(move)
                 action = chess_move.from_square * 64 + chess_move.to_square
+                state = self.env._get_observation()
                 self.env.step(action)
-                states.append(state)
-                actions.append(action)
-            except chess.IllegalMoveError:
-                print(f"Illegal move: {move}")
-                continue
-            except chess.InvalidMoveError:
+                valid_states.append(state)
+                valid_actions.append(action)
+            except (chess.IllegalMoveError, chess.InvalidMoveError):
                 print(f"Invalid move: {move}")
                 continue
+
+        if not valid_states:
+            # Если нет допустимых ходов, возвращаем начальное состояние и случайное действие
+            return self.env._get_observation(), random.randint(0, 4095), 0
+
+        # Выбираем случайное состояние и соответствующее действие
+        idx = random.randint(0, len(valid_states) - 1)
+        state = valid_states[idx]
+        action = valid_actions[idx]
 
         # Преобразуем результат в числовое значение
         if result == "1-0":
@@ -52,11 +61,11 @@ class ChessDataset(Dataset):
         else:  # "1/2-1/2"
             value = 0
 
-        if not states:
-            # Если по какой-то причине нет состояний, вернем пустые тензоры
-            return torch.empty(0, 13, 8, 8), torch.empty(0, dtype=torch.long), torch.empty(0)
+        return torch.FloatTensor(state), action, value
 
-        return torch.stack([torch.FloatTensor(s) for s in states]), torch.LongTensor(actions), torch.FloatTensor([value] * len(states))
+def collate_fn(batch):
+    states, actions, values = zip(*batch)
+    return torch.stack(states), torch.LongTensor(actions), torch.FloatTensor(values)
 
 
 def pretrain():
@@ -69,22 +78,18 @@ def pretrain():
     dataset = load_dataset("adamkarvonen/chess_sae_individual_games_filtered",
                            split="train[:10000]")  # Загружаем первые 10000 игр для примера
     chess_dataset = ChessDataset(dataset)
-    dataloader = DataLoader(chess_dataset, batch_size=32, shuffle=True)
+    dataloader = DataLoader(chess_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn)
 
     num_epochs = 10
     for epoch in range(num_epochs):
         total_loss = 0
         total_batches = 0
         for batch_idx, (states, actions, values) in enumerate(dataloader):
-            if states.numel() == 0:
-                print(f"Skipping empty batch {batch_idx}")
-                continue  # Пропускаем пустые батчи
-
             states, actions, values = states.to(device), actions.to(device), values.to(device)
             optimizer.zero_grad()
-            policy, value = model(states.view(-1, 13, 8, 8))
-            policy_loss = policy_criterion(policy, actions.view(-1))
-            value_loss = value_criterion(value.squeeze(), values.view(-1))
+            policy, value = model(states)
+            policy_loss = policy_criterion(policy, actions)
+            value_loss = value_criterion(value.squeeze(), values)
             loss = policy_loss + value_loss
             loss.backward()
             optimizer.step()
