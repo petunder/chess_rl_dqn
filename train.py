@@ -23,7 +23,7 @@ def save_game(moves, episode, folder):
 
 
 def state_to_tensor(state):
-    return state.reshape(13, 8, 8)
+    return state.reshape(1, 13, 8, 8)  # Add batch dimension
 
 
 def action_to_move(action):
@@ -64,7 +64,6 @@ def choose_legal_move(board, policy):
         return random.choice(legal_moves), 0
 
     return legal_moves[best_move_index], 0
-
 def visualize_training(episode, white_rewards, black_rewards, white_legal_moves, black_legal_moves):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 12))
 

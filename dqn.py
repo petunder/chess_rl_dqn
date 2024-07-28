@@ -46,7 +46,7 @@ class ChessNetwork(nn.Module):
         self.residual_tower = nn.Sequential(*[ResBlock(residual_channels) for _ in range(residual_layers)])
 
         self.policy_conv = ConvBlock(residual_channels, 2, 1)
-        self.policy_fc = nn.Linear(2 * board_size * board_size, board_size * board_size * board_size)  # 8x8x8 = 512
+        self.policy_fc = nn.Linear(2 * board_size * board_size, 4096)  # 64 * 64 = 4096
 
         self.value_conv = ConvBlock(residual_channels, 1, 1)
         self.value_fc_1 = nn.Linear(board_size * board_size, 256)
@@ -66,7 +66,6 @@ class ChessNetwork(nn.Module):
         value = torch.tanh(self.value_fc_2(value))
 
         return policy, value
-
 class DQNAgent:
     def __init__(self, state_size, action_size, name):
         self.name = name

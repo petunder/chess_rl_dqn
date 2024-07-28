@@ -33,7 +33,7 @@ class DQNAgent:
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state, board):
-        state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        state = torch.FloatTensor(state).to(self.device)
         attempts = 0
         max_attempts = 10  # Максимальное количество попыток выбора хода
 
@@ -63,7 +63,6 @@ class DQNAgent:
 
         print(f"{self.name} agent failed to choose a legal move after {max_attempts} attempts. Choosing randomly.")
         return random.choice(list(board.legal_moves))
-
     def choose_legal_move(self, board, q_values):
         legal_moves = list(board.legal_moves)
         legal_move_indices = [move.from_square * 64 + move.to_square for move in legal_moves]
