@@ -38,7 +38,15 @@ def choose_legal_move(board, policy):
         return None, -1  # Нет легальных ходов, игра окончена
 
     legal_move_indices = [move.from_square * 64 + move.to_square for move in legal_moves]
-    legal_policy_values = policy[legal_move_indices]
+
+    print(f"Policy shape: {policy.shape}")
+    print(f"Max legal move index: {max(legal_move_indices)}")
+
+    if max(legal_move_indices) >= policy.shape[0]:
+        print("Warning: Legal move index out of bounds. Using random move.")
+        return random.choice(legal_moves), 0
+
+    legal_policy_values = policy[legal_move_indices].cpu()  # Move to CPU
 
     if legal_policy_values.numel() == 0:
         print("Warning: No legal moves found in policy")
@@ -56,7 +64,6 @@ def choose_legal_move(board, policy):
         return random.choice(legal_moves), 0
 
     return legal_moves[best_move_index], 0
-
 
 def visualize_training(episode, white_rewards, black_rewards, white_legal_moves, black_legal_moves):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 12))

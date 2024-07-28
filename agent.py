@@ -35,18 +35,34 @@ class DQNAgent:
     def act(self, state, board):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         attempts = 0
-        while True:
+        max_attempts = 10  # Максимальное количество попыток выбора хода
+
+        while attempts < max_attempts:
             with torch.no_grad():
                 policy, _ = self.model(state)
-                policy = policy.squeeze().cpu().numpy()
-            move = self.choose_legal_move(board, policy)
+                policy = policy.squeeze().cpu()
+
+            print(f"Policy output shape: {policy.shape}")
+            move, penalty = choose_legal_move(board, policy)
+
+            if move is None:
+                print(f"{self.name} agent has no legal moves. Game over.")
+                return None
+
             if move in board.legal_moves:
                 return move
             else:
                 attempts += 1
                 print(f"{self.name} agent made an illegal move (attempt {attempts}): {move}")
                 print(f"{self.name} agent is being penalized and will try again.")
-                policy[move.from_square * 64 + move.to_square] = -float('inf')
+                move_index = move.from_square * 64 + move.to_square
+                if move_index < policy.shape[0]:
+                    policy[move_index] = float('-inf')
+                else:
+                    print(f"Warning: Move index {move_index} out of bounds for policy shape {policy.shape}")
+
+        print(f"{self.name} agent failed to choose a legal move after {max_attempts} attempts. Choosing randomly.")
+        return random.choice(list(board.legal_moves))
 
     def choose_legal_move(self, board, q_values):
         legal_moves = list(board.legal_moves)
