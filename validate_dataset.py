@@ -2,6 +2,7 @@ import os
 import chess
 from datasets import load_dataset
 import pandas as pd
+from chess_common import ChessEnv
 
 
 def validate_dataset(dataset_name):
