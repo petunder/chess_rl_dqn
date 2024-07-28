@@ -28,15 +28,15 @@ class ChessEnv(gym.Env):
         return self._get_observation(), reward, done, {}
 
     def _get_observation(self):
-        obs = np.zeros((8, 8, 13), dtype=np.float32)
+        obs = np.zeros((13, 8, 8), dtype=np.float32)
         for i in range(64):
             piece = self.board.piece_at(i)
             if piece:
                 color = int(piece.color)
                 piece_type = piece.piece_type - 1
-                obs[i // 8, i % 8, piece_type + color * 6] = 1
+                obs[piece_type + color * 6, i // 8, i % 8] = 1
             else:
-                obs[i // 8, i % 8, 12] = 1
+                obs[12, i // 8, i % 8] = 1
         return obs
 
     def _get_reward(self):

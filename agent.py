@@ -33,16 +33,15 @@ class DQNAgent:
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state, board):
-        state = torch.FloatTensor(state).to(self.device)
+        state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         attempts = 0
-        max_attempts = 10  # Максимальное количество попыток выбора хода
+        max_attempts = 10
 
         while attempts < max_attempts:
             with torch.no_grad():
                 policy, _ = self.model(state)
                 policy = policy.squeeze().cpu()
 
-            print(f"Policy output shape: {policy.shape}")
             move, penalty = choose_legal_move(board, policy)
 
             if move is None:
