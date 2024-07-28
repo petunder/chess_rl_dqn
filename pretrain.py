@@ -4,7 +4,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 from datasets import load_dataset
 from dqn import ChessNetwork
-from chess_env import ChessEnv
+from chess_common import ChessEnv
 
 
 class ChessDataset(Dataset):

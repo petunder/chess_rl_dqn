@@ -1,5 +1,5 @@
 # train.py
-from chess_env import ChessEnv
+from chess_common import ChessEnv
 from agent import DQNAgent
 import numpy as np
 import matplotlib.pyplot as plt
