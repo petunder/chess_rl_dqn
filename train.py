@@ -11,6 +11,8 @@ import matplotlib
 import os
 from datetime import datetime
 
+white_illegal_moves = 0
+black_illegal_moves = 0
 def save_game(moves, episode, folder):
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -94,8 +96,17 @@ for episode in range(num_episodes):
         agent = white_agent if current_player == chess.WHITE else black_agent
 
         action = agent.act(state, env.board)
+        if action not in env.board.legal_moves:
+            if current_player == chess.WHITE:
+                white_illegal_moves += 1
+            else:
+                black_illegal_moves += 1
         moves.append(action.uci())
         next_state, reward, done, _ = env.step(action.from_square * 64 + action.to_square)
+
+        if done:
+            if env.board.is_checkmate():
+                reward = 100 if current_player == chess.BLACK else -100
 
         agent.remember(state, action.from_square * 64 + action.to_square, reward, next_state, done)
         agent.replay()
@@ -122,7 +133,8 @@ for episode in range(num_episodes):
     if episode % 100 == 0:
         visualize_training(episode, white_rewards_history, black_rewards_history, white_legal_moves_history, black_legal_moves_history)
         print(f"Episode: {episode}, White Reward: {white_reward}, Black Reward: {black_reward}")
-        print(f"White Legal Moves: {white_legal_moves}, Black Legal Moves: {black_legal_moves}")
+        print(f"White Legal Moves: {white_legal_moves}, White Illegal Moves: {white_illegal_moves}")
+        print(f"Black Legal Moves: {black_legal_moves}, Black Illegal Moves: {black_illegal_moves}")
         print(f"White Epsilon: {white_agent.epsilon}, Black Epsilon: {black_agent.epsilon}")
         print(f"White Average Weights: {white_agent.get_average_weights()}")
         print(f"Black Average Weights: {black_agent.get_average_weights()}")

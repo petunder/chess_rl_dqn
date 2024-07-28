@@ -41,7 +41,7 @@ class ChessEnv(gym.Env):
 
     def _get_reward(self):
         if self.board.is_checkmate():
-            return 100 if self.board.turn == chess.BLACK else -100
+            return 1000 if self.board.turn == chess.BLACK else -1000  # Увеличенная награда за мат
         elif self.board.is_stalemate() or self.board.is_insufficient_material():
             return 0
         else:
@@ -59,7 +59,6 @@ class ChessEnv(gym.Env):
             black_score = sum(len(self.board.pieces(piece_type, chess.BLACK)) * value
                               for piece_type, value in piece_values.items())
             return (white_score - black_score) / 100  # Нормализация
-
     def render(self):
         print(self.board)
 

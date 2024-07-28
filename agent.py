@@ -34,6 +34,7 @@ class DQNAgent:
 
     def act(self, state, board):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        attempts = 0
         while True:
             with torch.no_grad():
                 q_values = self.model(state).squeeze().cpu().numpy()
@@ -41,7 +42,9 @@ class DQNAgent:
             if move in board.legal_moves:
                 return move
             else:
-                # Наказание за недопустимый ход
+                attempts += 1
+                print(f"{self.name} agent made an illegal move (attempt {attempts}): {move}")
+                print(f"{self.name} agent is being penalized and will try again.")
                 q_values[move.from_square * 64 + move.to_square] = -float('inf')
 
     def choose_legal_move(self, board, q_values):
