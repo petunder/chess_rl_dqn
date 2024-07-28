@@ -29,15 +29,11 @@ class ChessDataset(Dataset):
 
         for move in moves:
             state = self.env._get_observation()
-            try:
-                chess_move = self.env.board.parse_san(move)
-                action = chess_move.from_square * 64 + chess_move.to_square
-                self.env.step(action)
-                states.append(state)
-                actions.append(action)
-            except ValueError:
-                print(f"Invalid move: {move}")
-                continue
+            chess_move = chess.Move.from_uci(move)
+            action = chess_move.from_square * 64 + chess_move.to_square
+            self.env.step(action)
+            states.append(state)
+            actions.append(action)
 
         # Преобразуем результат в числовое значение
         if result == "1-0":
@@ -47,8 +43,11 @@ class ChessDataset(Dataset):
         else:  # "1/2-1/2"
             value = 0
 
-        return torch.stack([torch.FloatTensor(s) for s in states]), torch.LongTensor(actions), torch.FloatTensor(
-            [value] * len(states))
+        if not states:
+            # Если по какой-то причине нет состояний, вернем пустые тензоры
+            return torch.empty(0, 13, 8, 8), torch.empty(0, dtype=torch.long), torch.empty(0)
+
+        return torch.stack([torch.FloatTensor(s) for s in states]), torch.LongTensor(actions), torch.FloatTensor([value] * len(states))
 
 
 def pretrain():
@@ -67,6 +66,9 @@ def pretrain():
     for epoch in range(num_epochs):
         total_loss = 0
         for states, actions, values in dataloader:
+            if states.numel() == 0:
+                continue  # Пропускаем пустые батчи
+
             states, actions, values = states.to(device), actions.to(device), values.to(device)
             optimizer.zero_grad()
             policy, value = model(states.view(-1, 13, 8, 8))
