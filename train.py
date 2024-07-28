@@ -34,9 +34,27 @@ def action_to_move(action):
 
 def choose_legal_move(board, policy):
     legal_moves = list(board.legal_moves)
+    if not legal_moves:
+        return None, -1  # Нет легальных ходов, игра окончена
+
     legal_move_indices = [move.from_square * 64 + move.to_square for move in legal_moves]
     legal_policy_values = policy[legal_move_indices]
-    best_move_index = torch.argmax(legal_policy_values).item()
+
+    if legal_policy_values.numel() == 0:
+        print("Warning: No legal moves found in policy")
+        return random.choice(legal_moves), 0
+
+    if torch.isnan(legal_policy_values).any() or torch.isinf(legal_policy_values).any():
+        print("Warning: NaN or Inf values in policy")
+        return random.choice(legal_moves), 0
+
+    try:
+        best_move_index = torch.argmax(legal_policy_values).item()
+    except RuntimeError as e:
+        print(f"Error in choose_legal_move: {e}")
+        print(f"legal_policy_values: {legal_policy_values}")
+        return random.choice(legal_moves), 0
+
     return legal_moves[best_move_index], 0
 
 

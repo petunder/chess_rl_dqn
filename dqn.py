@@ -91,13 +91,32 @@ class DQNAgent:
         self.epsilon_decay = 0.995
         self.losses = []
 
-    def act(self, state):
-        if np.random.rand() <= self.epsilon:
-            return random.randrange(self.action_size)
+    def act(self, state, board):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
-        with torch.no_grad():
-            policy, _ = self.model(state)
-        return policy.argmax().item()
+        attempts = 0
+        max_attempts = 10  # Максимальное количество попыток выбора хода
+
+        while attempts < max_attempts:
+            with torch.no_grad():
+                policy, _ = self.model(state)
+                policy = policy.squeeze().cpu()
+
+            move, penalty = choose_legal_move(board, policy)
+
+            if move is None:
+                print(f"{self.name} agent has no legal moves. Game over.")
+                return None
+
+            if move in board.legal_moves:
+                return move
+            else:
+                attempts += 1
+                print(f"{self.name} agent made an illegal move (attempt {attempts}): {move}")
+                print(f"{self.name} agent is being penalized and will try again.")
+                policy[move.from_square * 64 + move.to_square] = float('-inf')
+
+        print(f"{self.name} agent failed to choose a legal move after {max_attempts} attempts. Choosing randomly.")
+        return random.choice(list(board.legal_moves))
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
