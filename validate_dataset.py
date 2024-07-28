@@ -4,11 +4,13 @@ from datasets import load_dataset
 import pandas as pd
 from chess_common import ChessEnv
 
-
 def validate_dataset(dataset_name):
+    # Санитизация названия датасета для использования в имени файла
+    sanitized_dataset_name = dataset_name.replace("/", "_")
+
     # Пути к файлам результатов проверки
-    invalid_moves_file = f'{dataset_name}_invalid_moves_log.txt'
-    valid_games_file = f'{dataset_name}_valid_games.csv'
+    invalid_moves_file = f'{sanitized_dataset_name}_invalid_moves_log.txt'
+    valid_games_file = f'{sanitized_dataset_name}_valid_games.csv'
 
     # Проверяем, существуют ли уже файлы результатов проверки
     if os.path.exists(invalid_moves_file) and os.path.exists(valid_games_file):
@@ -56,12 +58,12 @@ def validate_dataset(dataset_name):
     valid_games_df.to_csv(valid_games_file, index=False)
 
     # Вывод результатов в консоль
-    print(f"Validation completed for dataset {dataset_name}:")
+    print(f"Validation completed for dataset {sanitized_dataset_name}:")
     print(f"Total games checked: {len(dataset)}")
     print(f"Valid games: {len(valid_games)}")
     print(f"Illegal moves found: {len(illegal_moves)}")
 
 
-# Название датасета, который вы хотите проверить
+# Название датасета, которое вы хотите проверить
 dataset_name = "adamkarvonen/chess_sae_individual_games_filtered"
 validate_dataset(dataset_name)
