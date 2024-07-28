@@ -30,29 +30,21 @@ class ChessDataset(Dataset):
         result = game['Result']
 
         self.env.reset()
-        valid_states = []
-        valid_actions = []
+        states = []
+        actions = []
 
         for move in moves:
-            try:
-                chess_move = self.env.board.parse_san(move)
-                action = chess_move.from_square * 64 + chess_move.to_square
-                state = self.env._get_observation()
-                self.env.step(action)
-                valid_states.append(state)
-                valid_actions.append(action)
-            except (chess.IllegalMoveError, chess.InvalidMoveError):
-                print(f"Invalid move: {move}")
-                continue
-
-        if not valid_states:
-            # Если нет допустимых ходов, возвращаем начальное состояние и случайное действие
-            return self.env._get_observation(), random.randint(0, 4095), 0
+            chess_move = self.env.board.parse_san(move)
+            action = chess_move.from_square * 64 + chess_move.to_square
+            state = self.env._get_observation()
+            self.env.step(action)
+            states.append(state)
+            actions.append(action)
 
         # Выбираем случайное состояние и соответствующее действие
-        idx = random.randint(0, len(valid_states) - 1)
-        state = valid_states[idx]
-        action = valid_actions[idx]
+        idx = random.randint(0, len(states) - 1)
+        state = states[idx]
+        action = actions[idx]
 
         # Преобразуем результат в числовое значение
         if result == "1-0":
