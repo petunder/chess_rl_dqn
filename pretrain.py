@@ -1,3 +1,4 @@
+#pretrain.py
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -61,7 +62,8 @@ class ChessDataset(Dataset):
         else:  # "1/2-1/2"
             value = 0
 
-        return torch.FloatTensor(state), action, value
+        return torch.FloatTensor(state), torch.LongTensor([action]), torch.FloatTensor([value])
+
 
 def collate_fn(batch):
     states, actions, values = zip(*batch)
