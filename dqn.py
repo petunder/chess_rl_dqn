@@ -43,6 +43,7 @@ class ChessNetwork(nn.Module):
                  residual_layers: int = 19):
         super().__init__()
         self.conv_input = ConvBlock(in_channels, residual_channels, 3)
+
         self.residual_tower = nn.Sequential(*[ResBlock(residual_channels) for _ in range(residual_layers)])
 
         self.policy_conv = ConvBlock(residual_channels, 2, 1)

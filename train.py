@@ -23,7 +23,7 @@ def save_game(moves, episode, folder):
 
 
 def state_to_tensor(state):
-    return state.transpose(2, 0, 1)  # Переставляем оси, чтобы получить [13, 8, 8]
+    return state  # Теперь состояние уже имеет правильную форму (13, 8, 8)
 
 
 def action_to_move(action):
