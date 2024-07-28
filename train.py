@@ -1,4 +1,4 @@
-#train.py
+# train.py
 from chess_env import ChessEnv
 from agent import DQNAgent
 import numpy as np
@@ -11,8 +11,9 @@ import matplotlib
 import os
 from datetime import datetime
 
-white_illegal_moves = 0
-black_illegal_moves = 0
+matplotlib.use('Agg')  # Используйте не-интерактивный бэкенд
+
+
 def save_game(moves, episode, folder):
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -20,11 +21,9 @@ def save_game(moves, episode, folder):
     with open(filename, "w") as f:
         f.write(" ".join(moves))
 
-matplotlib.use('Agg')  # Используйте не-интерактивный бэкенд
-
 
 def state_to_tensor(state):
-    return state.flatten()
+    return state.reshape(13, 8, 8)
 
 
 def action_to_move(action):
@@ -33,11 +32,11 @@ def action_to_move(action):
     return chess.Move(from_square, to_square)
 
 
-def choose_legal_move(board, q_values):
+def choose_legal_move(board, policy):
     legal_moves = list(board.legal_moves)
     legal_move_indices = [move.from_square * 64 + move.to_square for move in legal_moves]
-    legal_q_values = q_values[legal_move_indices]
-    best_move_index = np.argmax(legal_q_values)
+    legal_policy_values = policy[legal_move_indices]
+    best_move_index = torch.argmax(legal_policy_values).item()
     return legal_moves[best_move_index], 0
 
 
@@ -67,8 +66,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 env = ChessEnv()
-state_size = 8 * 8 * 13  # 8x8 доска, 13 возможных состояний для каждой клетки
-action_size = 64 * 64  # все возможные ходы (из-в)
 white_agent = DQNAgent("White")
 black_agent = DQNAgent("Black")
 
@@ -83,6 +80,7 @@ folder_name = datetime.now().strftime("training/%d_%m_%Y_%H_%M")
 
 for episode in range(num_episodes):
     state = env.reset()
+    state = state_to_tensor(state)
     done = False
     step = 0
     white_reward = 0
@@ -91,30 +89,30 @@ for episode in range(num_episodes):
     black_legal_moves = 0
     white_illegal_moves = 0
     black_illegal_moves = 0
-    moves = []  # Добавляем список для сохранения ходов
+    moves = []
 
     while not done and step < max_steps:
         current_player = env.get_current_player()
         agent = white_agent if current_player == chess.WHITE else black_agent
 
-        action = agent.act(state, env.board)
-        print(f"Episode {episode}, Step {step}: {'White' if current_player == chess.WHITE else 'Black'} chooses action {action}")
+        state_tensor = torch.FloatTensor(state).unsqueeze(0).to(device)
+        with torch.no_grad():
+            policy, _ = agent.model(state_tensor)
+
+        action, _ = choose_legal_move(env.board, policy.squeeze())
+        print(
+            f"Episode {episode}, Step {step}: {'White' if current_player == chess.WHITE else 'Black'} chooses action {action}")
 
         next_state, reward, done, _ = env.step(action.from_square * 64 + action.to_square)
-        moves.append(action.uci())  # Добавляем ход в список moves
+        next_state = state_to_tensor(next_state)
+        moves.append(action.uci())
 
         if current_player == chess.WHITE:
             white_reward += reward
-            if action in env.board.legal_moves:
-                white_legal_moves += 1
-            else:
-                white_illegal_moves += 1
+            white_legal_moves += 1
         else:
             black_reward += reward
-            if action in env.board.legal_moves:
-                black_legal_moves += 1
-            else:
-                black_illegal_moves += 1
+            black_legal_moves += 1
 
         print(f"Reward: {reward}, Done: {done}")
         print(f"Board state:\n{env.board}")
@@ -125,7 +123,7 @@ for episode in range(num_episodes):
         state = next_state
         step += 1
 
-    save_game(moves, episode, folder_name)  # Сохраняем игру после завершения эпизода
+    save_game(moves, episode, folder_name)
 
     white_agent.update_target_model()
     black_agent.update_target_model()
@@ -136,7 +134,8 @@ for episode in range(num_episodes):
     black_legal_moves_history.append(black_legal_moves)
 
     if episode % 100 == 0:
-        visualize_training(episode, white_rewards_history, black_rewards_history, white_legal_moves_history, black_legal_moves_history)
+        visualize_training(episode, white_rewards_history, black_rewards_history, white_legal_moves_history,
+                           black_legal_moves_history)
         print(f"Episode: {episode}, White Reward: {white_reward}, Black Reward: {black_reward}")
         print(f"White Legal Moves: {white_legal_moves}, White Illegal Moves: {white_illegal_moves}")
         print(f"Black Legal Moves: {black_legal_moves}, Black Illegal Moves: {black_illegal_moves}")
