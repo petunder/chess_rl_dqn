@@ -5,7 +5,7 @@ import torch.nn as nn
 import numpy as np
 import random
 from collections import deque
-from dqn import DQN
+from dqn import ChessNetwork
 
 class DQNAgent:
     def __init__(self, name):
@@ -13,8 +13,8 @@ class DQNAgent:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
 
-        self.model = DQN().to(self.device)
-        self.target_model = DQN().to(self.device)
+        self.model = ChessNetwork().to(self.device)
+        self.target_model = ChessNetwork().to(self.device)
         self.target_model.load_state_dict(self.model.state_dict())
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=0.0001, weight_decay=1e-5)
@@ -37,15 +37,16 @@ class DQNAgent:
         attempts = 0
         while True:
             with torch.no_grad():
-                q_values = self.model(state).squeeze().cpu().numpy()
-            move = self.choose_legal_move(board, q_values)
+                policy, _ = self.model(state)
+                policy = policy.squeeze().cpu().numpy()
+            move = self.choose_legal_move(board, policy)
             if move in board.legal_moves:
                 return move
             else:
                 attempts += 1
                 print(f"{self.name} agent made an illegal move (attempt {attempts}): {move}")
                 print(f"{self.name} agent is being penalized and will try again.")
-                q_values[move.from_square * 64 + move.to_square] = -float('inf')
+                policy[move.from_square * 64 + move.to_square] = -float('inf')
 
     def choose_legal_move(self, board, q_values):
         legal_moves = list(board.legal_moves)
@@ -67,12 +68,18 @@ class DQNAgent:
         next_states = torch.FloatTensor(np.array(next_states)).to(self.device)
         dones = torch.FloatTensor(dones).to(self.device)
 
-        current_q_values = self.model(states).gather(1, actions.unsqueeze(1))
+        current_policy, current_value = self.model(states)
+        current_q_values = current_policy.gather(1, actions.unsqueeze(1))
+
         with torch.no_grad():
-            next_q_values = self.target_model(next_states).max(1)[0]
+            next_policy, next_value = self.target_model(next_states)
+            next_q_values = next_policy.max(1)[0]
+
         target_q_values = rewards + (1 - dones) * self.gamma * next_q_values
 
-        loss = nn.MSELoss()(current_q_values, target_q_values.unsqueeze(1))
+        value_loss = nn.MSELoss()(current_value.squeeze(), target_q_values)
+        policy_loss = nn.MSELoss()(current_q_values.squeeze(), target_q_values)
+        loss = value_loss + policy_loss
 
         self.optimizer.zero_grad()
         loss.backward()
