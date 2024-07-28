@@ -89,34 +89,36 @@ for episode in range(num_episodes):
     black_reward = 0
     white_legal_moves = 0
     black_legal_moves = 0
-    moves = []
+    white_illegal_moves = 0
+    black_illegal_moves = 0
 
     while not done and step < max_steps:
         current_player = env.get_current_player()
         agent = white_agent if current_player == chess.WHITE else black_agent
 
         action = agent.act(state, env.board)
-        if action not in env.board.legal_moves:
-            if current_player == chess.WHITE:
-                white_illegal_moves += 1
-            else:
-                black_illegal_moves += 1
-        moves.append(action.uci())
+        print(f"Episode {episode}, Step {step}: {'White' if current_player == chess.WHITE else 'Black'} chooses action {action}")
+
         next_state, reward, done, _ = env.step(action.from_square * 64 + action.to_square)
-
-        if done:
-            if env.board.is_checkmate():
-                reward = 100 if current_player == chess.BLACK else -100
-
-        agent.remember(state, action.from_square * 64 + action.to_square, reward, next_state, done)
-        agent.replay()
 
         if current_player == chess.WHITE:
             white_reward += reward
-            white_legal_moves += 1
+            if action in env.board.legal_moves:
+                white_legal_moves += 1
+            else:
+                white_illegal_moves += 1
         else:
             black_reward += reward
-            black_legal_moves += 1
+            if action in env.board.legal_moves:
+                black_legal_moves += 1
+            else:
+                black_illegal_moves += 1
+
+        print(f"Reward: {reward}, Done: {done}")
+        print(f"Board state:\n{env.board}")
+
+        agent.remember(state, action.from_square * 64 + action.to_square, reward, next_state, done)
+        agent.replay()
 
         state = next_state
         step += 1
