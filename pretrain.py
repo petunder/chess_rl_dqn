@@ -10,6 +10,8 @@ import chess.pgn
 import io
 
 
+import chess
+
 class ChessDataset(Dataset):
     def __init__(self, games):
         self.games = games
@@ -29,11 +31,18 @@ class ChessDataset(Dataset):
 
         for move in moves:
             state = self.env._get_observation()
-            chess_move = chess.Move.from_uci(move)
-            action = chess_move.from_square * 64 + chess_move.to_square
-            self.env.step(action)
-            states.append(state)
-            actions.append(action)
+            try:
+                chess_move = self.env.board.parse_san(move)
+                action = chess_move.from_square * 64 + chess_move.to_square
+                self.env.step(action)
+                states.append(state)
+                actions.append(action)
+            except chess.IllegalMoveError:
+                print(f"Illegal move: {move}")
+                continue
+            except chess.InvalidMoveError:
+                print(f"Invalid move: {move}")
+                continue
 
         # Преобразуем результат в числовое значение
         if result == "1-0":
@@ -65,8 +74,10 @@ def pretrain():
     num_epochs = 10
     for epoch in range(num_epochs):
         total_loss = 0
-        for states, actions, values in dataloader:
+        total_batches = 0
+        for batch_idx, (states, actions, values) in enumerate(dataloader):
             if states.numel() == 0:
+                print(f"Skipping empty batch {batch_idx}")
                 continue  # Пропускаем пустые батчи
 
             states, actions, values = states.to(device), actions.to(device), values.to(device)
@@ -78,8 +89,13 @@ def pretrain():
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
+            total_batches += 1
 
-        print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {total_loss / len(dataloader)}")
+            if batch_idx % 100 == 0:
+                print(f"Epoch {epoch + 1}/{num_epochs}, Batch {batch_idx}/{len(dataloader)}, Loss: {loss.item():.4f}")
+
+        avg_loss = total_loss / total_batches if total_batches > 0 else 0
+        print(f"Epoch {epoch + 1}/{num_epochs}, Average Loss: {avg_loss:.4f}")
 
     torch.save(model.state_dict(), "pretrained_chess_model.pth")
 
