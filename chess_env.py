@@ -3,7 +3,9 @@ import gym
 import numpy as np
 import chess
 from gym import spaces
-
+from chess_env import ChessEnv
+from agent import DQNAgent
+import torch
 class ChessEnv(gym.Env):
     def __init__(self):
         super(ChessEnv, self).__init__()

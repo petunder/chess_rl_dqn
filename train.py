@@ -93,6 +93,11 @@ env = ChessEnv()
 white_agent = DQNAgent("White")
 black_agent = DQNAgent("Black")
 
+# Загрузка предобученных весов
+pretrained_weights = torch.load("pretrained_chess_model.pth")
+white_agent.model.load_state_dict(pretrained_weights)
+black_agent.model.load_state_dict(pretrained_weights)
+
 num_episodes = 10000
 max_steps = 100
 white_rewards_history = []
