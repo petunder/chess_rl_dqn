@@ -91,6 +91,7 @@ for episode in range(num_episodes):
     black_legal_moves = 0
     white_illegal_moves = 0
     black_illegal_moves = 0
+    moves = []  # Добавляем список для сохранения ходов
 
     while not done and step < max_steps:
         current_player = env.get_current_player()
@@ -100,6 +101,7 @@ for episode in range(num_episodes):
         print(f"Episode {episode}, Step {step}: {'White' if current_player == chess.WHITE else 'Black'} chooses action {action}")
 
         next_state, reward, done, _ = env.step(action.from_square * 64 + action.to_square)
+        moves.append(action.uci())  # Добавляем ход в список moves
 
         if current_player == chess.WHITE:
             white_reward += reward
@@ -123,7 +125,8 @@ for episode in range(num_episodes):
         state = next_state
         step += 1
 
-    save_game(moves, episode, folder_name)
+    save_game(moves, episode, folder_name)  # Сохраняем игру после завершения эпизода
+
     white_agent.update_target_model()
     black_agent.update_target_model()
 
