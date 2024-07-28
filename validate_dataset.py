@@ -8,8 +8,12 @@ class ChessEnv:
     def __init__(self):
         self.board = chess.Board()
 
-    def reset(self):
-        self.board.reset()
+    def reset(self, fen=None):
+        if fen:
+            self.board.set_fen(fen)
+        else:
+            self.board.reset()
+
 
 
 def validate_dataset(dataset_name):
@@ -34,8 +38,10 @@ def validate_dataset(dataset_name):
     valid_games = []
 
     for idx, game in enumerate(dataset):
+        # предполагаем, что у нас есть поле 'initial_fen' в датасете для каждой игры, иначе используем стандартное начальное положение
+        initial_fen = game.get('initial_fen', chess.STARTING_FEN)
         moves = game['text'].split()[1::2]
-        env.reset()
+        env.reset(initial_fen)
         valid = True
         for move in moves:
             try:
