@@ -2,18 +2,14 @@ import os
 import chess
 from datasets import load_dataset
 import pandas as pd
-#from chess_common import ChessEnv
+
 
 class ChessEnv:
     def __init__(self):
         self.board = chess.Board()
 
-    def reset(self, fen=None):
-        if fen:
-            self.board.set_fen(fen)
-        else:
-            self.board.reset()
-
+    def reset(self, fen=chess.STARTING_FEN):
+        self.board.set_fen(fen)
 
 
 def validate_dataset(dataset_name):
@@ -22,14 +18,7 @@ def validate_dataset(dataset_name):
     valid_games_file = f'{sanitized_dataset_name}_valid_games.csv'
 
     if os.path.exists(invalid_moves_file) and os.path.exists(valid_games_file):
-        valid_games_df = pd.read_csv(valid_games_file)
-        num_valid_games = len(valid_games_df)
-        with open(invalid_moves_file, 'r') as f:
-            invalid_moves = f.readlines()
-        num_invalid_moves = len(invalid_moves)
-        print("Validation already performed:")
-        print(f"Valid games: {num_valid_games}")
-        print(f"Illegal moves found: {num_invalid_moves}")
+        print("Validation already performed.")
         return
 
     dataset = load_dataset(dataset_name, split="train[:10000]")
@@ -38,12 +27,14 @@ def validate_dataset(dataset_name):
     valid_games = []
 
     for idx, game in enumerate(dataset):
-        # предполагаем, что у нас есть поле 'initial_fen' в датасете для каждой игры, иначе используем стандартное начальное положение
-        initial_fen = game.get('initial_fen', chess.STARTING_FEN)
-        moves = game['text'].split()[1::2]
-        env.reset(initial_fen)
+        raw_moves = game['text']
+        moves = raw_moves.replace(';', '').split()
+        env.reset()  # Стандартная начальная позиция
         valid = True
+
         for move in moves:
+            if move[-1].isdigit():  # Пропускаем номера ходов
+                continue
             try:
                 chess_move = env.board.parse_san(move)
                 env.board.push(chess_move)
