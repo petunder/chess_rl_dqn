@@ -10,7 +10,7 @@ class ChessEnv:
 
     def reset(self, fen=chess.STARTING_FEN):
         self.board.set_fen(fen)
-        self.board.castling_rights = chess.Board().castling_rights  # Убедимся, что права на рокировку установлены правильно
+        print(f"Board reset to initial position:\n{self.board}")
 
 def validate_dataset(dataset_name):
     sanitized_dataset_name = dataset_name.replace("/", "_")
@@ -40,7 +40,7 @@ def validate_dataset(dataset_name):
             try:
                 print(f"Processing move: {move} on board:\n{env.board}")
                 env.board.push_san(move)
-                print(f"Move {move} executed successfully")
+                print(f"Move {move} executed successfully\n{env.board}")
             except ValueError as e:
                 illegal_moves.append((idx, move, env.board.fen(), str(e)))
                 valid = False
@@ -69,4 +69,3 @@ def validate_dataset(dataset_name):
 
 dataset_name = "adamkarvonen/chess_sae_individual_games_filtered"
 validate_dataset(dataset_name)
-
