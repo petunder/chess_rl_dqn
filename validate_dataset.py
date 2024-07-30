@@ -46,9 +46,12 @@ def validate_single_game(moves, termination, result, game_index=0):
     print(f"Result of the game: {result}")
 
 def validate_multiple_games(dataset_name):
-    dataset = load_dataset(dataset_name, split="train[:10]")
+    # Загрузка данных в режиме потока
+    dataset = load_dataset(dataset_name, split="train", streaming=True)
+    dataset = dataset.take(10)  # Берем только первые 10 игр
     for i, game in enumerate(dataset):
         validate_single_game(game['Moves'], game['Termination'], game['Result'], game_index=i)
+
 
 dataset_name = "laion/strategic_game_chess"
 validate_multiple_games(dataset_name)
