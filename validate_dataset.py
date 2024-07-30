@@ -48,7 +48,7 @@ def validate_single_game(game_text, game_index=0):
 
 
 def validate_multiple_games(dataset_name):
-    dataset = load_dataset(dataset_name, split="train[:10]")  # Загружаем первые 10 игр
+    dataset = load_dataset(dataset_name, split="train[:10]", download_mode='force_redownload')
     for i, game in enumerate(dataset):
         validate_single_game(game['text'], game_index=i)
 
