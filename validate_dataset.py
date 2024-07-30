@@ -11,7 +11,6 @@ class ChessEnv:
     def reset(self, fen=chess.STARTING_FEN):
         self.board.set_fen(fen)
 
-
 def validate_dataset(dataset_name):
     sanitized_dataset_name = dataset_name.replace("/", "_")
     invalid_moves_file = f'{sanitized_dataset_name}_invalid_moves_log.txt'
@@ -38,6 +37,11 @@ def validate_dataset(dataset_name):
             if move[-1].isdigit():  # Пропускаем номера ходов
                 continue
             try:
+                # Проверка на рокировку
+                if move == 'O-O':
+                    move = 'e1g1' if env.board.turn == chess.WHITE else 'e8g8'
+                elif move == 'O-O-O':
+                    move = 'e1c1' if env.board.turn == chess.WHITE else 'e8c8'
                 chess_move = env.board.parse_san(move)
                 env.board.push(chess_move)
             except ValueError as e:
@@ -65,7 +69,6 @@ def validate_dataset(dataset_name):
     print(f"Total games checked: {len(dataset)}")
     print(f"Valid games: {len(valid_games)}")
     print(f"Illegal moves found: {len(illegal_moves)}")
-
 
 dataset_name = "adamkarvonen/chess_sae_individual_games_filtered"
 validate_dataset(dataset_name)
