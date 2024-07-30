@@ -53,5 +53,5 @@ def validate_multiple_games(dataset_name):
         validate_single_game(game['text'], game_index=i)
 
 
-dataset_name = "adamkarvonen/chess_sae_individual_games_filtered"
+dataset_name = "adamkarvonen/chess_sae_individual_games"
 validate_multiple_games(dataset_name)
