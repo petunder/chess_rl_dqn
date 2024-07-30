@@ -2,7 +2,7 @@
 import chess
 import chess.pgn
 from datasets import load_dataset
-import re  # Добавлено для использования регулярных выражений
+import re  # Используем для регулярных выражений
 
 
 class ChessEnv:
@@ -28,14 +28,15 @@ def validate_single_game(dataset_name, game_index=0):
     game = dataset[game_index]
     raw_moves = game['text']
 
-    # Удаление номеров ходов и точек
-    moves = re.sub(r'\d+\.', '', raw_moves).split()
+    # Удаление начальной точки с запятой, номеров ходов и точек
+    cleaned_moves = re.sub(r'\d+\.', '', raw_moves.replace(';', '')).split()
 
     env.reset()  # Сброс доски в начальное положение
 
     print(f"Game {game_index}: {raw_moves}")
+    print(f"Processed moves: {cleaned_moves}")  # Вывод обработанных ходов для проверки
 
-    for move in moves:
+    for move in cleaned_moves:
         print(f"Processing move: {move} on board:\n{env.board}")
         try:
             env.push_san(move)
