@@ -12,6 +12,10 @@ class ChessEnv:
         self.board.set_fen(fen)
         print(f"Board reset to initial position:\n{self.board}")
 
+    def push_san(self, move):
+        self.board.push_san(move)
+        print(f"Move {move} executed successfully\n{self.board}")
+
 def validate_dataset(dataset_name):
     sanitized_dataset_name = dataset_name.replace("/", "_")
     invalid_moves_file = f'{sanitized_dataset_name}_invalid_moves_log.txt'
@@ -39,8 +43,7 @@ def validate_dataset(dataset_name):
                 continue
             try:
                 print(f"Processing move: {move} on board:\n{env.board}")
-                env.board.push_san(move)
-                print(f"Move {move} executed successfully\n{env.board}")
+                env.push_san(move)
             except ValueError as e:
                 illegal_moves.append((idx, move, env.board.fen(), str(e)))
                 valid = False
