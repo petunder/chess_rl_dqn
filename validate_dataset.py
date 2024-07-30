@@ -2,56 +2,54 @@
 import chess
 import chess.pgn
 from datasets import load_dataset
-import re  # Используем для регулярных выражений
-
+import re
 
 class ChessEnv:
     def __init__(self):
         self.board = chess.Board()
 
-    def reset(self, fen=chess.STARTING_FEN):
-        self.board.set_fen(fen)
+    def reset(self):
+        self.board.reset()
         print(f"Board reset to initial position:\n{self.board}")
 
-    def push_san(self, move):
+    def push_uci(self, move):
         try:
-            self.board.push_san(move)
+            self.board.push_uci(move)
             print(f"Move {move} executed successfully. Current board:\n{self.board}")
         except Exception as e:
             print(f"Error executing move {move}: {str(e)}")
             raise e
 
-
-def validate_single_game(game_text, game_index=0):
+def validate_single_game(moves, termination, result, game_index=0):
     env = ChessEnv()
+    env.reset()
 
-    # Удаление начальной точки с запятой, номеров ходов и точек
-    cleaned_moves = re.sub(r'\d+\.', '', game_text.replace(';', '')).split()
+    print(f"Game {game_index}:")
+    for move in moves:
+        env.push_uci(move)
 
-    # Удаление элементов, состоящих только из цифр
-    filtered_moves = [move for move in cleaned_moves if not move.isdigit()]
+    # Checking game termination condition
+    termination_status = {
+        1: env.board.is_checkmate(),
+        2: env.board.is_stalemate(),
+        3: env.board.is_insufficient_material(),
+        4: env.board.is_seventyfive_moves(),
+        5: env.board.is_fivefold_repetition(),
+        6: env.board.can_claim_fifty_moves(),
+        7: env.board.can_claim_threefold_repetition(),
+        8: env.board.is_variant_win(),
+        9: env.board.is_variant_loss(),
+        10: env.board.is_variant_draw()
+    }
 
-    env.reset()  # Сброс доски в начальное положение
-
-    print(f"Game {game_index}: {game_text}")
-    print(f"Processed moves: {filtered_moves}")  # Вывод обработанных ходов для проверки
-
-    for move in filtered_moves:
-        print(f"Processing move: {move} on board:\n{env.board}")
-        try:
-            env.push_san(move)
-        except chess.IllegalMoveError as e:
-            print(f"Game {game_index}: Illegal move '{move}' - Error: {e}")
-            break
-
-    print(f"Game {game_index}: Processing complete.")
-
+    print(f"Termination condition met: {termination_status.get(termination, 'Unknown termination')}")
+    print(f"Result of the game: {result}")
 
 def validate_multiple_games(dataset_name):
-    dataset = load_dataset(dataset_name, split="train[:10]", download_mode='force_redownload')
+    dataset = load_dataset(dataset_name, split="train[:10]")
     for i, game in enumerate(dataset):
-        validate_single_game(game['text'], game_index=i)
+        validate_single_game(game['Moves'], game['Termination'], game['Result'], game_index=i)
 
-
-dataset_name = "adamkarvonen/chess_sae_individual_games"
+dataset_name = "laion/strategic_game_chess"
 validate_multiple_games(dataset_name)
+
