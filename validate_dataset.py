@@ -12,33 +12,30 @@ class ChessEnv:
         print(f"Board reset to initial position:\n{self.board}")
 
     def push_san(self, move):
-        self.board.push_san(move)
-        print(f"Move {move} executed successfully\n{self.board}")
-
+        try:
+            self.board.push_san(move)
+            print(f"Move {move} executed successfully:\n{self.board}")
+        except Exception as e:
+            print(f"Error executing move {move}: {str(e)}")
+            raise e
 
 def validate_single_game(dataset_name, game_index=0):
-    dataset = load_dataset(dataset_name, split="train[:1]")
+    dataset = load_dataset(dataset_name, split="train[:1]")  # Limited to the first game
     env = ChessEnv()
-    env.reset()  # Переместите env.reset() вне цикла обработки ходов
 
     game = dataset[game_index]
     raw_moves = game['text']
-    moves = raw_moves.replace(';', '').replace('.', ' ').split()
+    moves = raw_moves.replace(';', '').split()
 
-    print(f"Game {game_index}: {raw_moves}")
+    env.reset()  # Reset the board to the starting position only once
+
+    print(f"Game {game_index}: {raw_moves}")  # Log the original game text
 
     for move in moves:
-        if move[-1].isdigit():
+        if move[-1].isdigit():  # Skip move numbers
             continue
-        try:
-            print(f"Processing move: {move} on board:\n{env.board}")
-            env.push_san(move)
-        except chess.IllegalMoveError as e:
-            print(f"Game {game_index}: Illegal move '{move}' in position {env.board.fen()} - Error: {e}")
-            break
-
-    print(f"Game {game_index}: All moves valid.")
-
+        print(f"Processing move: {move} on board:\n{env.board}")
+        env.push_san(move)
 
 dataset_name = "adamkarvonen/chess_sae_individual_games_filtered"
 validate_single_game(dataset_name)
