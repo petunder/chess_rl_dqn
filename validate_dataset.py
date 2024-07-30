@@ -1,6 +1,7 @@
 #validate_dataset.py
 import os
 import chess
+import chess.pgn
 from datasets import load_dataset
 import pandas as pd
 
