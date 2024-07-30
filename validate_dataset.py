@@ -16,35 +16,25 @@ class ChessEnv:
         print(f"Move {move} executed successfully\n{self.board}")
 
 def validate_single_game(dataset_name, game_index=0):
-    dataset = load_dataset(dataset_name, split="train[:1]")  # Ограничение на одну строку
+    dataset = load_dataset(dataset_name, split="train[:1]")  # Limited to the first game
     env = ChessEnv()
-
     game = dataset[game_index]
     raw_moves = game['text']
     moves = raw_moves.replace(';', '').split()
-    env.reset()  # Стандартная начальная позиция
-    valid = True
+    env.reset()
 
-    print(f"Game {game_index}: {raw_moves}")  # Логирование исходного текста игры
+    print(f"Game {game_index}: {raw_moves}")
 
     for move in moves:
-        if move[-1].isdigit():  # Пропускаем номера ходов
+        if move[-1].isdigit():
             continue
-
         try:
-            print(f"Processing move: {move} on board:\n{env.board}")
             env.push_san(move)
-        except ValueError as e:
-            print(f"Game {game_index}: Illegal move '{move}' in position {env.board.fen()} - Error: {e}")
-            valid = False
-            break
         except chess.IllegalMoveError as e:
             print(f"Game {game_index}: Illegal move '{move}' in position {env.board.fen()} - Error: {e}")
-            valid = False
-            break
+            return  # Stop processing this game on the first illegal move
 
-    if valid:
-        print(f"Game {game_index}: All moves valid.")
+    print(f"Game {game_index}: All moves valid.")
 
 dataset_name = "adamkarvonen/chess_sae_individual_games_filtered"
 validate_single_game(dataset_name)
