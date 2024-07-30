@@ -27,7 +27,7 @@ def validate_single_game(dataset_name, game_index=0):
     raw_moves = game['text']
     # Удаление точек после номеров и разбиение на ходы
     moves = raw_moves.replace(';', '').replace('.', ' ').split()
-
+    print(moves)
     env.reset()  # Reset the board to the starting position only once
 
     print(f"Game {game_index}: {raw_moves}")  # Log the original game text
