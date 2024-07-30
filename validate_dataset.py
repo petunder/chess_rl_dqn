@@ -2,6 +2,8 @@
 import chess
 import chess.pgn
 from datasets import load_dataset
+import re  # Добавлено для использования регулярных выражений
+
 
 class ChessEnv:
     def __init__(self):
@@ -14,27 +16,26 @@ class ChessEnv:
     def push_san(self, move):
         try:
             self.board.push_san(move)
-            print(f"Move {move} executed successfully. Current FEN: {self.board.fen()}")
+            print(f"Move {move} executed successfully. Current board:\n{self.board}")
         except Exception as e:
             print(f"Error executing move {move}: {str(e)}")
             raise e
 
 
 def validate_single_game(dataset_name, game_index=0):
-    dataset = load_dataset(dataset_name, split="train[:1]")  # Limited to the first game
+    dataset = load_dataset(dataset_name, split="train[:1]")
     env = ChessEnv()
     game = dataset[game_index]
     raw_moves = game['text']
-    # Удаление точек после номеров и разбиение на ходы
-    moves = raw_moves.replace(';', '').replace('.', ' ').split()
-    print(moves)
-    env.reset()  # Reset the board to the starting position only once
 
-    print(f"Game {game_index}: {raw_moves}")  # Log the original game text
+    # Удаление номеров ходов и точек
+    moves = re.sub(r'\d+\.', '', raw_moves).split()
+
+    env.reset()  # Сброс доски в начальное положение
+
+    print(f"Game {game_index}: {raw_moves}")
 
     for move in moves:
-        if move[-1].isdigit():  # Skip move numbers, ensure moves are purely algebraic
-            continue
         print(f"Processing move: {move} on board:\n{env.board}")
         try:
             env.push_san(move)
