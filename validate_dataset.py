@@ -66,4 +66,3 @@ def validate_dataset(dataset_name):
 
 dataset_name = "adamkarvonen/chess_sae_individual_games_filtered"
 validate_dataset(dataset_name)
-
