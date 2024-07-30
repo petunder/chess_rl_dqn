@@ -37,13 +37,7 @@ def validate_dataset(dataset_name):
             if move[-1].isdigit():  # Пропускаем номера ходов
                 continue
             try:
-                # Проверка на рокировку
-                if move == 'O-O':
-                    move = 'e1g1' if env.board.turn == chess.WHITE else 'e8g8'
-                elif move == 'O-O-O':
-                    move = 'e1c1' if env.board.turn == chess.WHITE else 'e8c8'
-                chess_move = env.board.parse_san(move)
-                env.board.push(chess_move)
+                env.board.push_san(move)
             except ValueError as e:
                 illegal_moves.append((idx, move, env.board.fen(), str(e)))
                 valid = False
@@ -72,3 +66,4 @@ def validate_dataset(dataset_name):
 
 dataset_name = "adamkarvonen/chess_sae_individual_games_filtered"
 validate_dataset(dataset_name)
+
