@@ -39,9 +39,13 @@ def validate_dataset(dataset_name):
 
         print(f"Game {idx}: {raw_moves}")  # Логирование исходного текста игры
 
+        move_number = 1  # Инициализация номера хода
+
         for move in moves:
             if move[-1].isdigit():  # Пропускаем номера ходов
+                move_number += 1
                 continue
+
             try:
                 print(f"Processing move: {move} on board:\n{env.board}")
                 env.push_san(move)
@@ -73,4 +77,3 @@ def validate_dataset(dataset_name):
 
 dataset_name = "adamkarvonen/chess_sae_individual_games_filtered"
 validate_dataset(dataset_name)
-
