@@ -15,6 +15,7 @@ class ChessEnv:
         self.board.push_san(move)
         print(f"Move {move} executed successfully\n{self.board}")
 
+
 def validate_single_game(dataset_name, game_index=0):
     dataset = load_dataset(dataset_name, split="train[:1]")
     env = ChessEnv()
@@ -22,7 +23,7 @@ def validate_single_game(dataset_name, game_index=0):
 
     game = dataset[game_index]
     raw_moves = game['text']
-    moves = raw_moves.replace(';', '').split()
+    moves = raw_moves.replace(';', '').replace('.', ' ').split()
 
     print(f"Game {game_index}: {raw_moves}")
 
