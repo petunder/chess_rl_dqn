@@ -22,18 +22,15 @@ class ChessEnv:
             raise e
 
 
-def validate_single_game(dataset_name, game_index=0):
-    dataset = load_dataset(dataset_name, split="train[:1]")
+def validate_single_game(game_text, game_index=0):
     env = ChessEnv()
-    game = dataset[game_index]
-    raw_moves = game['text']
 
     # Удаление начальной точки с запятой, номеров ходов и точек
-    cleaned_moves = re.sub(r'\d+\.', '', raw_moves.replace(';', '')).split()
+    cleaned_moves = re.sub(r'\d+\.', '', game_text.replace(';', '')).split()
 
     env.reset()  # Сброс доски в начальное положение
 
-    print(f"Game {game_index}: {raw_moves}")
+    print(f"Game {game_index}: {game_text}")
     print(f"Processed moves: {cleaned_moves}")  # Вывод обработанных ходов для проверки
 
     for move in cleaned_moves:
@@ -46,6 +43,10 @@ def validate_single_game(dataset_name, game_index=0):
 
     print(f"Game {game_index}: Processing complete.")
 
+def validate_multiple_games(dataset_name):
+    dataset = load_dataset(dataset_name, split="train[:10]")  # Загружаем первые 10 игр
+    for i, game in enumerate(dataset):
+        validate_single_game(game['text'], game_index=i)
 
 dataset_name = "adamkarvonen/chess_sae_individual_games_filtered"
-validate_single_game(dataset_name)
+validate_multiple_games(dataset_name)
