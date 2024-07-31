@@ -31,7 +31,7 @@ class ChessEnv:
 
     def push_uci(self, move):
         self.board.push_uci(move)
-        logger.debug(f"Move {move} executed. Current board state:\n{self.board}")
+#        logger.debug(f"Move {move} executed. Current board state:\n{self.board}")
 
     def get_board_state(self):
         return self.board
@@ -75,7 +75,7 @@ class ChessDataset(IterableDataset):
         from_square = chess.SQUARE_NAMES.index(move[:2])
         to_square = chess.SQUARE_NAMES.index(move[2:4])
         action = from_square * 64 + to_square
-        logger.debug(f"Converted move {move} to action {action}")
+#        logger.debug(f"Converted move {move} to action {action}")
         return action
 
     def board_state_to_tensor(self, state):
@@ -113,7 +113,7 @@ class ChessDataset(IterableDataset):
         tensor[12, :, :] = 0 if parts[1] == 'w' else 1
         logger.debug(f"Set player turn in tensor[12, :, :] to {'0 (white)' if parts[1] == 'w' else '1 (black)'}")
 
-        logger.debug(f"Tensor after conversion: {tensor}")
+#        logger.debug(f"Tensor after conversion: {tensor}")
         return tensor
 
 def log_model_statistics(model):
