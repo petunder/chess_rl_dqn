@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 
 def load_and_split_dataset(dataset_name, split_ratio=0.8):
     dataset = load_dataset(dataset_name, split="train", streaming=True)
-    dataset = dataset.take(100)  # Ограничиваем размер датасета 100 записями
+    dataset = dataset.take(1000)  # Ограничиваем размер датасета 1000 записями
 
     data_list = list(dataset)
     train_data, val_data = train_test_split(data_list, train_size=split_ratio, random_state=42)
@@ -127,15 +127,15 @@ def pretrain(dataset_name):
     model = ChessNetwork().to(device)
     logger.info(f"Model initialized on device: {device}")
 
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
     policy_criterion = nn.CrossEntropyLoss()
 
     train_data, val_data = load_and_split_dataset(dataset_name)
 
     train_dataset = ChessDataset(train_data)
     val_dataset = ChessDataset(val_data)
-    train_dataloader = DataLoader(train_dataset, batch_size=32)
-    val_dataloader = DataLoader(val_dataset, batch_size=32)
+    train_dataloader = DataLoader(train_dataset, batch_size=64)
+    val_dataloader = DataLoader(val_dataset, batch_size=64)
 
     num_epochs = 100
     for epoch in range(num_epochs):
@@ -160,7 +160,7 @@ def pretrain(dataset_name):
 
             total_policy_loss += policy_loss.item()
             total_batches += 1
-            logger.debug(f"Batch {i + 1} processed. Policy Loss: {policy_loss.item()}")
+#            logger.debug(f"Batch {i + 1} processed. Policy Loss: {policy_loss.item()}")
 
         avg_policy_loss = total_policy_loss / total_batches if total_batches > 0 else 0
         logger.info(f"Epoch {epoch + 1}/{num_epochs} completed. Average Training Policy Loss: {avg_policy_loss:.4f}")
