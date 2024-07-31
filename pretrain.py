@@ -167,6 +167,7 @@ def pretrain(dataset_name):
             value_loss = value_criterion(value.squeeze(), values)
             loss = policy_loss + value_loss
 
+            logger.debug(f"Policy loss: {policy_loss.item()}, Value loss: {value_loss.item()}")
             loss.backward()
             optimizer.step()
 
