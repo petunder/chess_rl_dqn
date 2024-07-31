@@ -9,6 +9,7 @@ import random
 import chess
 from loguru import logger
 
+
 class ChessEnv:
     def __init__(self):
         self.board = chess.Board()
@@ -24,6 +25,7 @@ class ChessEnv:
 
     def get_board_state(self):
         return self.board
+
 
 class ChessDataset(IterableDataset):
     def __init__(self, dataset, buffer_size=100):
@@ -79,10 +81,13 @@ class ChessDataset(IterableDataset):
         logger.debug(f"Converting board state to tensor: {state}")
         pass
 
+
 def pretrain(dataset_name):
     logger.info(f"Starting pretraining with dataset: {dataset_name}")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = ChessNetwork().to(device)
+    logger.info(f"Model initialized on device: {device}")
+
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     policy_criterion = nn.CrossEntropyLoss()
     value_criterion = nn.MSELoss()
@@ -96,17 +101,23 @@ def pretrain(dataset_name):
         total_loss = 0
         total_batches = 0
         logger.info(f"Epoch {epoch + 1}/{num_epochs} started.")
-        for states, actions, values in dataloader:
+        for i, (states, actions, values) in enumerate(dataloader):
+            logger.info(f"Batch {i + 1} loaded with {len(states)} samples.")
             states, actions, values = states.to(device), actions.to(device), values.to(device)
+
             optimizer.zero_grad()
             policy, value = model(states)
+
             policy_loss = policy_criterion(policy, actions.squeeze())
             value_loss = value_criterion(value.squeeze(), values)
             loss = policy_loss + value_loss
+
             loss.backward()
             optimizer.step()
+
             total_loss += loss.item()
             total_batches += 1
+            logger.info(f"Batch {i + 1} processed. Loss: {loss.item()}")
 
         avg_loss = total_loss / total_batches if total_batches > 0 else 0
         logger.info(f"Epoch {epoch + 1}/{num_epochs} completed. Average Loss: {avg_loss:.4f}")
@@ -114,6 +125,7 @@ def pretrain(dataset_name):
     model_save_path = f"pretrained_chess_model_train.pth"
     torch.save(model.state_dict(), model_save_path)
     logger.info(f"Model saved to {model_save_path}")
+
 
 if __name__ == "__main__":
     dataset_name = "laion/strategic_game_chess"
