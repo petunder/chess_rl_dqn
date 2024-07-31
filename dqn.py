@@ -24,7 +24,7 @@ class ConvBlock(nn.Module):
         x += self.beta.view(1, self.bn.num_features, 1, 1).expand_as(x)
         if self.relu:
             x = F.relu(x, inplace=True)
-        logger.debug(f"ConvBlock forward pass with input shape {x.shape}")
+#        logger.debug(f"ConvBlock forward pass with input shape {x.shape}")
         return x
 
 class ResBlock(nn.Module):
@@ -40,7 +40,7 @@ class ResBlock(nn.Module):
         out = self.conv2(out)
         out += identity
         out = F.relu(out, inplace=True)
-        logger.debug(f"ResBlock forward pass with output shape {out.shape}")
+#        logger.debug(f"ResBlock forward pass with output shape {out.shape}")
         return out
 
 class ChessNetwork(nn.Module):
@@ -71,5 +71,5 @@ class ChessNetwork(nn.Module):
         value = F.relu(self.value_fc_1(torch.flatten(value, start_dim=1)), inplace=True)
         value = torch.tanh(self.value_fc_2(value))
 
-        logger.debug(f"ChessNetwork forward pass completed with policy shape {policy.shape} and value shape {value.shape}")
+#        logger.debug(f"ChessNetwork forward pass completed with policy shape {policy.shape} and value shape {value.shape}")
         return policy, value
