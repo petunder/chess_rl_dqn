@@ -22,33 +22,48 @@ class ChessEnv:
         return self.board
 
 class ChessDataset(IterableDataset):
-    def __init__(self, dataset):
+    def __init__(self, dataset, buffer_size=100):
         self.dataset = dataset
+        self.buffer_size = buffer_size
         self.env = ChessEnv()
 
     def __iter__(self):
+        buffer = []
         for game in self.dataset:
-            moves = game['Moves']
-            result = game['Result']
+            buffer.append(game)
+            if len(buffer) >= self.buffer_size:
+                random.shuffle(buffer)
+                for game in buffer:
+                    yield self.process_game(game)
+                buffer = []
 
-            self.env.reset()
-            states = []
-            actions = []
+        if buffer:
+            random.shuffle(buffer)
+            for game in buffer:
+                yield self.process_game(game)
 
-            for move in moves:
-                self.env.push_uci(move)
-                state = self.env.get_board_state().fen()
-                action = move
-                states.append(state)
-                actions.append(action)
+    def process_game(self, game):
+        moves = game['Moves']
+        result = game['Result']
 
-            idx = random.randint(0, len(states) - 1)
-            state = states[idx]
-            action = actions[idx]
-            value = 1 if result == "1-0" else -1 if result == "0-1" else 0
+        self.env.reset()
+        states = []
+        actions = []
 
-            state_tensor = self.board_state_to_tensor(state)
-            yield state_tensor, torch.LongTensor([action]), torch.FloatTensor([value])
+        for move in moves:
+            self.env.push_uci(move)
+            state = self.env.get_board_state().fen()
+            action = move
+            states.append(state)
+            actions.append(action)
+
+        idx = random.randint(0, len(states) - 1)
+        state = states[idx]
+        action = actions[idx]
+        value = 1 if result == "1-0" else -1 if result == "0-1" else 0
+
+        state_tensor = self.board_state_to_tensor(state)
+        return state_tensor, torch.LongTensor([action]), torch.FloatTensor([value])
 
     def board_state_to_tensor(self, state):
         # Implement the conversion from board state (FEN) to tensor
@@ -63,7 +78,7 @@ def pretrain(dataset_name):
 
     dataset = load_dataset(dataset_name, split="train", streaming=True)
     chess_dataset = ChessDataset(dataset)
-    dataloader = DataLoader(chess_dataset, batch_size=32, shuffle=True)
+    dataloader = DataLoader(chess_dataset, batch_size=32)
 
     num_epochs = 10
     for epoch in range(num_epochs):
