@@ -134,8 +134,8 @@ def pretrain(dataset_name):
 
     train_dataset = ChessDataset(train_data)
     val_dataset = ChessDataset(val_data)
-    train_dataloader = DataLoader(train_dataset, batch_size=128)
-    val_dataloader = DataLoader(val_dataset, batch_size=128)
+    train_dataloader = DataLoader(train_dataset, batch_size=64)
+    val_dataloader = DataLoader(val_dataset, batch_size=64)
 
     num_epochs = 10
     for epoch in range(num_epochs):

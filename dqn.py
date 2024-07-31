@@ -1,4 +1,3 @@
-# dqn.py f
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -24,7 +23,6 @@ class ConvBlock(nn.Module):
         x += self.beta.view(1, self.bn.num_features, 1, 1).expand_as(x)
         if self.relu:
             x = F.relu(x, inplace=True)
-#        logger.debug(f"ConvBlock forward pass with input shape {x.shape}")
         return x
 
 class ResBlock(nn.Module):
@@ -40,22 +38,21 @@ class ResBlock(nn.Module):
         out = self.conv2(out)
         out += identity
         out = F.relu(out, inplace=True)
-#        logger.debug(f"ResBlock forward pass with output shape {out.shape}")
         return out
 
 class ChessNetwork(nn.Module):
-    def __init__(self, in_channels: int = 13, board_size: int = 8, residual_channels: int = 256,
-                 residual_layers: int = 19):
+    def __init__(self, in_channels: int = 13, board_size: int = 8, residual_channels: int = 512,
+                 residual_layers: int = 39):
         super().__init__()
         self.conv_input = ConvBlock(in_channels, residual_channels, 3)
         self.residual_tower = nn.Sequential(*[ResBlock(residual_channels) for _ in range(residual_layers)])
 
         self.policy_conv = ConvBlock(residual_channels, 2, 1)
-        self.policy_fc = nn.Linear(2 * board_size * board_size, 4096)  # 64 * 64 = 4096
+        self.policy_fc = nn.Linear(2 * board_size * board_size, 8192)  # Увеличили размерность полносвязного слоя
 
         self.value_conv = ConvBlock(residual_channels, 1, 1)
-        self.value_fc_1 = nn.Linear(board_size * board_size, 256)
-        self.value_fc_2 = nn.Linear(256, 1)
+        self.value_fc_1 = nn.Linear(board_size * board_size, 512)  # Увеличили размерность промежуточного слоя
+        self.value_fc_2 = nn.Linear(512, 1)  # Оставили без изменений
         logger.info(f"ChessNetwork initialized with in_channels={in_channels}, board_size={board_size}, residual_channels={residual_channels}, residual_layers={residual_layers}")
 
     def forward(self, x):
@@ -71,5 +68,4 @@ class ChessNetwork(nn.Module):
         value = F.relu(self.value_fc_1(torch.flatten(value, start_dim=1)), inplace=True)
         value = torch.tanh(self.value_fc_2(value))
 
-#        logger.debug(f"ChessNetwork forward pass completed with policy shape {policy.shape} and value shape {value.shape}")
         return policy, value
