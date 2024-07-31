@@ -87,10 +87,38 @@ class ChessDataset(IterableDataset):
     def board_state_to_tensor(self, state):
         # Преобразование состояния доски (FEN) в тензор
         logger.debug(f"Converting board state to tensor: {state}")
-        # Пример преобразования: нужно адаптировать в зависимости от модели
-        tensor = torch.zeros((13, 8, 8))  # Примерный размер
-        # Логика преобразования состояния FEN в тензор
-        # ...
+
+        # Инициализация пустого тензора размером (13, 8, 8)
+        tensor = torch.zeros((13, 8, 8), dtype=torch.float32)
+
+        # Разбиение состояния на части (FEN разделен пробелами)
+        parts = state.split()
+        board_state = parts[0]  # Первое значение - состояние доски
+
+        # Словарь соответствий фигур и каналов тензора
+        piece_to_channel = {
+            'p': 0, 'P': 1, 'r': 2, 'R': 3,
+            'n': 4, 'N': 5, 'b': 6, 'B': 7,
+            'q': 8, 'Q': 9, 'k': 10, 'K': 11,
+        }
+
+        # Преобразование состояния доски в тензор
+        rows = board_state.split('/')
+        for row_idx, row in enumerate(rows):
+            col_idx = 0
+            for char in row:
+                if char.isdigit():
+                    col_idx += int(char)  # Пропуск пустых клеток
+                else:
+                    if char in piece_to_channel:
+                        channel = piece_to_channel[char]
+                        tensor[channel, row_idx, col_idx] = 1
+                    col_idx += 1
+
+        # Дополнительный канал для текущего хода (белые или черные)
+        tensor[12, :, :] = 0 if parts[1] == 'w' else 1
+
+        logger.debug(f"Tensor after conversion: {tensor}")
         return tensor
 
 
@@ -112,6 +140,14 @@ def pretrain(dataset_name):
 
     dataset = load_dataset(dataset_name, split="train", streaming=True)
     dataset = dataset.take(100)  # Ограничиваем размер датасета 100 записями
+
+    # Выводим первые несколько записей датасета на уровне INFO
+    logger.info("First 5 entries of the dataset:")
+    for i, entry in enumerate(dataset):
+        logger.info(f"Entry {i + 1}: {entry}")
+        if i >= 4:
+            break
+
     chess_dataset = ChessDataset(dataset)
     dataloader = DataLoader(chess_dataset, batch_size=32)
 
