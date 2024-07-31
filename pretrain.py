@@ -20,7 +20,6 @@ def load_and_split_dataset(dataset_name, split_ratio=0.8):
     logger.info(f"Dataset split into {len(train_data)} training samples and {len(val_data)} validation samples.")
     return train_data, val_data
 
-
 class ChessEnv:
     def __init__(self):
         self.board = chess.Board()
@@ -36,7 +35,6 @@ class ChessEnv:
 
     def get_board_state(self):
         return self.board
-
 
 class ChessDataset(IterableDataset):
     def __init__(self, dataset, buffer_size=100):
@@ -118,12 +116,10 @@ class ChessDataset(IterableDataset):
         logger.debug(f"Tensor after conversion: {tensor}")
         return tensor
 
-
 def log_model_statistics(model):
     for name, param in model.named_parameters():
         if param.requires_grad:
             logger.info(f"{name}: mean={param.data.mean().item()}, std={param.data.std().item()}")
-
 
 def pretrain(dataset_name):
     logger.info(f"Starting pretraining with dataset: {dataset_name}")
@@ -174,6 +170,8 @@ def pretrain(dataset_name):
         model.eval()
         total_val_policy_loss = 0
         total_val_batches = 0
+        correct_predictions = 0
+        total_predictions = 0
         with torch.no_grad():
             for i, (states, actions) in enumerate(val_dataloader):
                 states, actions = states.to(device), actions.to(device)
@@ -182,14 +180,19 @@ def pretrain(dataset_name):
                 total_val_policy_loss += policy_loss.item()
                 total_val_batches += 1
 
+                # Подсчет правильных и неправильных предсказаний
+                predicted_actions = policy.argmax(dim=1)
+                correct_predictions += (predicted_actions == actions.squeeze()).sum().item()
+                total_predictions += actions.size(0)
+
         avg_val_policy_loss = total_val_policy_loss / total_val_batches if total_val_batches > 0 else 0
-        logger.info(
-            f"Epoch {epoch + 1}/{num_epochs} completed. Average Validation Policy Loss: {avg_val_policy_loss:.4f}")
+        accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0
+        logger.info(f"Epoch {epoch + 1}/{num_epochs} completed. Average Validation Policy Loss: {avg_val_policy_loss:.4f}")
+        logger.info(f"Validation Accuracy: {accuracy:.4f} ({correct_predictions}/{total_predictions} correct predictions)")
 
     model_save_path = f"pretrained_chess_model_train.pth"
     torch.save(model.state_dict(), model_save_path)
     logger.info(f"Model saved to {model_save_path}")
-
 
 if __name__ == "__main__":
     dataset_name = "laion/strategic_game_chess"
