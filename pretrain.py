@@ -37,7 +37,7 @@ class ChessEnv:
         return self.board
 
 class ChessDataset(IterableDataset):
-    def __init__(self, dataset, buffer_size=100):
+    def __init__(self, dataset, buffer_size=30000):
         self.dataset = dataset
         self.buffer_size = buffer_size
         self.env = ChessEnv()
@@ -134,8 +134,8 @@ def pretrain(dataset_name):
 
     train_dataset = ChessDataset(train_data)
     val_dataset = ChessDataset(val_data)
-    train_dataloader = DataLoader(train_dataset, batch_size=64)
-    val_dataloader = DataLoader(val_dataset, batch_size=64)
+    train_dataloader = DataLoader(train_dataset, batch_size=256)
+    val_dataloader = DataLoader(val_dataset, batch_size=256)
 
     num_epochs = 10
     for epoch in range(num_epochs):
