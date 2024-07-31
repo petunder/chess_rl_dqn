@@ -42,42 +42,27 @@ class ChessDataset(IterableDataset):
                 logger.info("Buffer full. Shuffling and processing games.")
                 random.shuffle(buffer)
                 for game in buffer:
-                    yield self.process_game(game)
+                    yield from self.process_game(game)
                 buffer = []
 
         if buffer:
             logger.info("Processing remaining games in buffer.")
             random.shuffle(buffer)
             for game in buffer:
-                yield self.process_game(game)
+                yield from self.process_game(game)
 
     def process_game(self, game):
         moves = game['Moves']
-        result = game['Result']
-        logger.debug(f"Processing game with moves: {moves} and result: {result}.")
-
         self.env.reset()
-        states = []
-        actions = []
 
         for move in moves:
-            self.env.push_uci(move)
             state = self.env.get_board_state().fen()
             action = self.move_to_action(move)
-            states.append(state)
-            actions.append(action)
-
-        idx = random.randint(0, len(states) - 1)
-        state = states[idx]
-        action = actions[idx]
-        value = 1 if result == "1-0" else -1 if result == "0-1" else 0
-
-        state_tensor = self.board_state_to_tensor(state)
-        logger.debug(f"Game processed. Selected move: {action}, value: {value}")
-        return state_tensor, torch.LongTensor([action]), torch.FloatTensor([value])
+            state_tensor = self.board_state_to_tensor(state)
+            self.env.push_uci(move)
+            yield state_tensor, torch.LongTensor([action])
 
     def move_to_action(self, move):
-        """Convert a UCI move to a unique integer."""
         from_square = chess.SQUARE_NAMES.index(move[:2])
         to_square = chess.SQUARE_NAMES.index(move[2:4])
         action = from_square * 64 + to_square
@@ -85,41 +70,33 @@ class ChessDataset(IterableDataset):
         return action
 
     def board_state_to_tensor(self, state):
-        # Преобразование состояния доски (FEN) в тензор
         logger.debug(f"Converting board state to tensor: {state}")
-
-        # Инициализация пустого тензора размером (13, 8, 8)
         tensor = torch.zeros((13, 8, 8), dtype=torch.float32)
-
-        # Разбиение состояния на части (FEN разделен пробелами)
         parts = state.split()
-        board_state = parts[0]  # Первое значение - состояние доски
+        board_state = parts[0]
 
-        # Словарь соответствий фигур и каналов тензора
         piece_to_channel = {
-            'p': 0, 'P': 1, 'r': 2, 'R': 3,
-            'n': 4, 'N': 5, 'b': 6, 'B': 7,
-            'q': 8, 'Q': 9, 'k': 10, 'K': 11,
+            'p': 0,  'P': 1,  'r': 2,  'R': 3,
+            'n': 4,  'N': 5,  'b': 6,  'B': 7,
+            'q': 8,  'Q': 9,  'k': 10, 'K': 11,
         }
 
-        # Преобразование состояния доски в тензор
         rows = board_state.split('/')
         for row_idx, row in enumerate(rows):
             col_idx = 0
             for char in row:
                 if char.isdigit():
-                    col_idx += int(char)  # Пропуск пустых клеток
+                    col_idx += int(char)
                 else:
                     if char in piece_to_channel:
                         channel = piece_to_channel[char]
                         tensor[channel, row_idx, col_idx] = 1
                     col_idx += 1
 
-        # Дополнительный канал для текущего хода (белые или черные)
         tensor[12, :, :] = 0 if parts[1] == 'w' else 1
-
         logger.debug(f"Tensor after conversion: {tensor}")
         return tensor
+
 
 
 def log_model_statistics(model):
@@ -136,12 +113,10 @@ def pretrain(dataset_name):
 
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     policy_criterion = nn.CrossEntropyLoss()
-    value_criterion = nn.MSELoss()
 
     dataset = load_dataset(dataset_name, split="train", streaming=True)
     dataset = dataset.take(100)  # Ограничиваем размер датасета 100 записями
 
-    # Выводим первые несколько записей датасета на уровне INFO
     logger.info("First 5 entries of the dataset:")
     for i, entry in enumerate(dataset):
         logger.info(f"Entry {i + 1}: {entry}")
@@ -153,36 +128,40 @@ def pretrain(dataset_name):
 
     num_epochs = 10
     for epoch in range(num_epochs):
-        total_loss = 0
+        total_policy_loss = 0
         total_batches = 0
         logger.info(f"Epoch {epoch + 1}/{num_epochs} started.")
-        for i, (states, actions, values) in enumerate(dataloader):
+
+        for i, (states, actions) in enumerate(dataloader):
             logger.debug(f"Batch {i + 1} loaded with {len(states)} samples.")
-            states, actions, values = states.to(device), actions.to(device), values.to(device)
+            states, actions = states.to(device), actions.to(device)
 
             optimizer.zero_grad()
-            policy, value = model(states)
+            policy, _ = model(states)
 
             policy_loss = policy_criterion(policy, actions.squeeze())
-            value_loss = value_criterion(value.squeeze(), values)
-            loss = policy_loss + value_loss
+            logger.debug(f"Policy loss: {policy_loss.item()}")
 
-            logger.debug(f"Policy loss: {policy_loss.item()}, Value loss: {value_loss.item()}")
-            loss.backward()
+            policy_loss.backward()
             optimizer.step()
 
-            total_loss += loss.item()
+            total_policy_loss += policy_loss.item()
             total_batches += 1
-            logger.debug(f"Batch {i + 1} processed. Loss: {loss.item()}")
+            logger.debug(f"Batch {i + 1} processed. Policy Loss: {policy_loss.item()}")
 
-        avg_loss = total_loss / total_batches if total_batches > 0 else 0
-        logger.info(f"Epoch {epoch + 1}/{num_epochs} completed. Average Loss: {avg_loss:.4f}")
+        avg_policy_loss = total_policy_loss / total_batches if total_batches > 0 else 0
+        logger.info(f"Epoch {epoch + 1}/{num_epochs} completed. Average Policy Loss: {avg_policy_loss:.4f}")
         log_model_statistics(model)
 
     model_save_path = f"pretrained_chess_model_train.pth"
     torch.save(model.state_dict(), model_save_path)
     logger.info(f"Model saved to {model_save_path}")
 
+
+if __name__ == "__main__":
+    dataset_name = "laion/strategic_game_chess"
+    pretrain(dataset_name)
+    # pretrain(dataset_name, 'test') # Uncomment for the test set
 
 if __name__ == "__main__":
     dataset_name = "laion/strategic_game_chess"
