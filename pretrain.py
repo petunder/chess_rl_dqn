@@ -63,7 +63,7 @@ class ChessDataset(IterableDataset):
         for move in moves:
             self.env.push_uci(move)
             state = self.env.get_board_state().fen()
-            action = move
+            action = self.move_to_action(move)
             states.append(state)
             actions.append(action)
 
@@ -75,6 +75,14 @@ class ChessDataset(IterableDataset):
         state_tensor = self.board_state_to_tensor(state)
         logger.info(f"Game processed. Selected move: {action}, value: {value}")
         return state_tensor, torch.LongTensor([action]), torch.FloatTensor([value])
+
+    def move_to_action(self, move):
+        """Convert a UCI move to a unique integer."""
+        from_square = chess.SQUARE_NAMES.index(move[:2])
+        to_square = chess.SQUARE_NAMES.index(move[2:4])
+        action = from_square * 64 + to_square
+        logger.debug(f"Converted move {move} to action {action}")
+        return action
 
     def board_state_to_tensor(self, state):
         # Преобразование состояния доски (FEN) в тензор
