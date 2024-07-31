@@ -27,7 +27,7 @@ class ChessEnv:
 
     def reset(self):
         self.board.reset()
-        logger.info("Board reset to initial position.")
+#        logger.info("Board reset to initial position.")
 
     def push_uci(self, move):
         self.board.push_uci(move)
@@ -137,7 +137,7 @@ def pretrain(dataset_name):
     train_dataloader = DataLoader(train_dataset, batch_size=32)
     val_dataloader = DataLoader(val_dataset, batch_size=32)
 
-    num_epochs = 10
+    num_epochs = 100
     for epoch in range(num_epochs):
         total_policy_loss = 0
         total_batches = 0
@@ -146,14 +146,14 @@ def pretrain(dataset_name):
         # Обучение на тренировочном наборе
         model.train()
         for i, (states, actions) in enumerate(train_dataloader):
-            logger.debug(f"Batch {i + 1} loaded with {len(states)} samples.")
+#            logger.debug(f"Batch {i + 1} loaded with {len(states)} samples.")
             states, actions = states.to(device), actions.to(device)
 
             optimizer.zero_grad()
             policy, _ = model(states)
 
             policy_loss = policy_criterion(policy, actions.squeeze())
-            logger.debug(f"Policy loss: {policy_loss.item()}")
+#            logger.debug(f"Policy loss: {policy_loss.item()}")
 
             policy_loss.backward()
             optimizer.step()
