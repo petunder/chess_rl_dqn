@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 
 def load_and_split_dataset(dataset_name, split_ratio=0.8):
     dataset = load_dataset(dataset_name, split="train", streaming=True)
-    dataset = dataset.take(1000)  # Ограничиваем размер датасета 1000 записями
+    dataset = dataset.take(10000)  # Ограничиваем размер датасета 1000 записями
 
     data_list = list(dataset)
     train_data, val_data = train_test_split(data_list, train_size=split_ratio, random_state=42)
@@ -137,7 +137,7 @@ def pretrain(dataset_name):
     train_dataloader = DataLoader(train_dataset, batch_size=64)
     val_dataloader = DataLoader(val_dataset, batch_size=64)
 
-    num_epochs = 100
+    num_epochs = 10
     for epoch in range(num_epochs):
         total_policy_loss = 0
         total_batches = 0
