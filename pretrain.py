@@ -111,6 +111,7 @@ def pretrain(dataset_name):
     value_criterion = nn.MSELoss()
 
     dataset = load_dataset(dataset_name, split="train", streaming=True)
+    dataset = dataset.take(100)  # Ограничиваем размер датасета 100 записями
     chess_dataset = ChessDataset(dataset)
     dataloader = DataLoader(chess_dataset, batch_size=32)
 
