@@ -79,7 +79,7 @@ class ChessDataset(IterableDataset):
         return action
 
     def board_state_to_tensor(self, state):
-        logger.debug(f"Converting board state to tensor: {state}")
+#        logger.debug(f"Converting board state to tensor: {state}")
 
         # Инициализация пустого тензора размером (13, 8, 8)
         tensor = torch.zeros((13, 8, 8), dtype=torch.float32)
@@ -106,12 +106,12 @@ class ChessDataset(IterableDataset):
                     if char in piece_to_channel:
                         channel = piece_to_channel[char]
                         tensor[channel, row_idx, col_idx] = 1
-                        logger.debug(f"Placed {char} at tensor[{channel}, {row_idx}, {col_idx}]")
+#                        logger.debug(f"Placed {char} at tensor[{channel}, {row_idx}, {col_idx}]")
                     col_idx += 1
 
         # Дополнительный канал для текущего хода (белые или черные)
         tensor[12, :, :] = 0 if parts[1] == 'w' else 1
-        logger.debug(f"Set player turn in tensor[12, :, :] to {'0 (white)' if parts[1] == 'w' else '1 (black)'}")
+#        logger.debug(f"Set player turn in tensor[12, :, :] to {'0 (white)' if parts[1] == 'w' else '1 (black)'}")
 
 #        logger.debug(f"Tensor after conversion: {tensor}")
         return tensor
