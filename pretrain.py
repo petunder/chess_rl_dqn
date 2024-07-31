@@ -77,9 +77,13 @@ class ChessDataset(IterableDataset):
         return state_tensor, torch.LongTensor([action]), torch.FloatTensor([value])
 
     def board_state_to_tensor(self, state):
-        # Implement the conversion from board state (FEN) to tensor
+        # Преобразование состояния доски (FEN) в тензор
         logger.debug(f"Converting board state to tensor: {state}")
-        pass
+        # Пример преобразования: нужно адаптировать в зависимости от модели
+        tensor = torch.zeros((13, 8, 8))  # Примерный размер
+        # Логика преобразования состояния FEN в тензор
+        # ...
+        return tensor
 
 
 def pretrain(dataset_name):
