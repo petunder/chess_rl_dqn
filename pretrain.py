@@ -21,7 +21,7 @@ class ChessEnv:
 
     def push_uci(self, move):
         self.board.push_uci(move)
-        logger.info(f"Move {move} executed. Current board state:\n{self.board}")
+        logger.debug(f"Move {move} executed. Current board state:\n{self.board}")
 
     def get_board_state(self):
         return self.board
@@ -54,7 +54,7 @@ class ChessDataset(IterableDataset):
     def process_game(self, game):
         moves = game['Moves']
         result = game['Result']
-        logger.info(f"Processing game with moves: {moves} and result: {result}.")
+        logger.debug(f"Processing game with moves: {moves} and result: {result}.")
 
         self.env.reset()
         states = []
@@ -73,7 +73,7 @@ class ChessDataset(IterableDataset):
         value = 1 if result == "1-0" else -1 if result == "0-1" else 0
 
         state_tensor = self.board_state_to_tensor(state)
-        logger.info(f"Game processed. Selected move: {action}, value: {value}")
+        logger.debug(f"Game processed. Selected move: {action}, value: {value}")
         return state_tensor, torch.LongTensor([action]), torch.FloatTensor([value])
 
     def move_to_action(self, move):
@@ -92,6 +92,12 @@ class ChessDataset(IterableDataset):
         # Логика преобразования состояния FEN в тензор
         # ...
         return tensor
+
+
+def log_model_statistics(model):
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            logger.info(f"{name}: mean={param.data.mean().item()}, std={param.data.std().item()}")
 
 
 def pretrain(dataset_name):
@@ -114,7 +120,7 @@ def pretrain(dataset_name):
         total_batches = 0
         logger.info(f"Epoch {epoch + 1}/{num_epochs} started.")
         for i, (states, actions, values) in enumerate(dataloader):
-            logger.info(f"Batch {i + 1} loaded with {len(states)} samples.")
+            logger.debug(f"Batch {i + 1} loaded with {len(states)} samples.")
             states, actions, values = states.to(device), actions.to(device), values.to(device)
 
             optimizer.zero_grad()
@@ -129,10 +135,11 @@ def pretrain(dataset_name):
 
             total_loss += loss.item()
             total_batches += 1
-            logger.info(f"Batch {i + 1} processed. Loss: {loss.item()}")
+            logger.debug(f"Batch {i + 1} processed. Loss: {loss.item()}")
 
         avg_loss = total_loss / total_batches if total_batches > 0 else 0
         logger.info(f"Epoch {epoch + 1}/{num_epochs} completed. Average Loss: {avg_loss:.4f}")
+        log_model_statistics(model)
 
     model_save_path = f"pretrained_chess_model_train.pth"
     torch.save(model.state_dict(), model_save_path)
