@@ -8,6 +8,17 @@ from dqn import ChessNetwork
 import random
 import chess
 from loguru import logger
+from sklearn.model_selection import train_test_split
+
+def load_and_split_dataset(dataset_name, split_ratio=0.8):
+    dataset = load_dataset(dataset_name, split="train", streaming=True)
+    dataset = dataset.take(100)  # Ограничиваем размер датасета 100 записями
+
+    data_list = list(dataset)
+    train_data, val_data = train_test_split(data_list, train_size=split_ratio, random_state=42)
+
+    logger.info(f"Dataset split into {len(train_data)} training samples and {len(val_data)} validation samples.")
+    return train_data, val_data
 
 
 class ChessEnv:
@@ -114,17 +125,12 @@ def pretrain(dataset_name):
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     policy_criterion = nn.CrossEntropyLoss()
 
-    dataset = load_dataset(dataset_name, split="train", streaming=True)
-    dataset = dataset.take(100)  # Ограничиваем размер датасета 100 записями
+    train_data, val_data = load_and_split_dataset(dataset_name)
 
-    logger.info("First 5 entries of the dataset:")
-    for i, entry in enumerate(dataset):
-        logger.info(f"Entry {i + 1}: {entry}")
-        if i >= 4:
-            break
-
-    chess_dataset = ChessDataset(dataset)
-    dataloader = DataLoader(chess_dataset, batch_size=32)
+    train_dataset = ChessDataset(train_data)
+    val_dataset = ChessDataset(val_data)
+    train_dataloader = DataLoader(train_dataset, batch_size=32)
+    val_dataloader = DataLoader(val_dataset, batch_size=32)
 
     num_epochs = 10
     for epoch in range(num_epochs):
@@ -132,7 +138,9 @@ def pretrain(dataset_name):
         total_batches = 0
         logger.info(f"Epoch {epoch + 1}/{num_epochs} started.")
 
-        for i, (states, actions) in enumerate(dataloader):
+        # Обучение на тренировочном наборе
+        model.train()
+        for i, (states, actions) in enumerate(train_dataloader):
             logger.debug(f"Batch {i + 1} loaded with {len(states)} samples.")
             states, actions = states.to(device), actions.to(device)
 
@@ -150,18 +158,29 @@ def pretrain(dataset_name):
             logger.debug(f"Batch {i + 1} processed. Policy Loss: {policy_loss.item()}")
 
         avg_policy_loss = total_policy_loss / total_batches if total_batches > 0 else 0
-        logger.info(f"Epoch {epoch + 1}/{num_epochs} completed. Average Policy Loss: {avg_policy_loss:.4f}")
+        logger.info(f"Epoch {epoch + 1}/{num_epochs} completed. Average Training Policy Loss: {avg_policy_loss:.4f}")
         log_model_statistics(model)
+
+        # Проверка на проверочном наборе
+        model.eval()
+        total_val_policy_loss = 0
+        total_val_batches = 0
+        with torch.no_grad():
+            for i, (states, actions) in enumerate(val_dataloader):
+                states, actions = states.to(device), actions.to(device)
+                policy, _ = model(states)
+                policy_loss = policy_criterion(policy, actions.squeeze())
+                total_val_policy_loss += policy_loss.item()
+                total_val_batches += 1
+
+        avg_val_policy_loss = total_val_policy_loss / total_val_batches if total_val_batches > 0 else 0
+        logger.info(
+            f"Epoch {epoch + 1}/{num_epochs} completed. Average Validation Policy Loss: {avg_val_policy_loss:.4f}")
 
     model_save_path = f"pretrained_chess_model_train.pth"
     torch.save(model.state_dict(), model_save_path)
     logger.info(f"Model saved to {model_save_path}")
 
-
-if __name__ == "__main__":
-    dataset_name = "laion/strategic_game_chess"
-    pretrain(dataset_name)
-    # pretrain(dataset_name, 'test') # Uncomment for the test set
 
 if __name__ == "__main__":
     dataset_name = "laion/strategic_game_chess"
